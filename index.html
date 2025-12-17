@@ -55,8 +55,8 @@
         /* Main Layout */
         .main-container {
             display: grid;
-            grid-template-columns: 70px 1fr 280px;
-            grid-template-rows: 1fr auto auto;
+            grid-template-columns: 60px 1fr 200px;
+            grid-template-rows: 1fr auto 150px;
             height: calc(100vh - 52px);
             gap: 1px;
             background: var(--border-color);
@@ -91,17 +91,17 @@
         }
 
         .tool-btn {
-            width: 54px;
-            height: 54px;
+            width: 48px;
+            height: 48px;
             border: 1px solid var(--border-color);
             background: rgba(255,255,255,0.03);
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 2px;
+            gap: 1px;
             transition: all 0.2s;
             color: var(--text-primary);
         }
@@ -118,12 +118,12 @@
         }
 
         .tool-btn svg {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
         }
 
         .tool-btn span {
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             color: var(--text-secondary);
         }
 
@@ -132,6 +132,8 @@
             background: #0a0a15;
             position: relative;
             overflow: hidden;
+            grid-column: 2;
+            grid-row: 1;
         }
 
         #canvas {
@@ -142,18 +144,19 @@
 
         .canvas-overlay {
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: 5px;
+            left: 5px;
             display: flex;
-            gap: 10px;
+            gap: 5px;
             pointer-events: none;
+            z-index: 10;
         }
 
         .canvas-info {
-            background: rgba(0,0,0,0.7);
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 0.75rem;
+            background: rgba(0,0,0,0.6);
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-size: 0.65rem;
             color: var(--text-secondary);
         }
 
@@ -161,8 +164,9 @@
         .property-panel {
             grid-row: 1 / 2;
             background: var(--bg-panel);
-            padding: 15px;
+            padding: 10px;
             overflow-y: auto;
+            font-size: 0.85rem;
         }
 
         .panel-header {
@@ -185,24 +189,24 @@
         }
 
         .form-group {
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
 
         .form-group label {
             display: block;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-secondary);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .form-group input, .form-group select {
             width: 100%;
-            padding: 8px 10px;
+            padding: 5px 8px;
             background: rgba(0,0,0,0.3);
             border: 1px solid var(--border-color);
             border-radius: 4px;
             color: var(--text-primary);
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
 
         .form-group input:focus, .form-group select:focus {
@@ -227,24 +231,24 @@
         .control-bar {
             grid-column: 2 / 4;
             background: var(--bg-panel);
-            padding: 10px 15px;
+            padding: 6px 12px;
             display: flex;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
             flex-wrap: wrap;
         }
 
         .btn {
-            padding: 8px 16px;
+            padding: 6px 12px;
             border: none;
-            border-radius: 6px;
+            border-radius: 5px;
             cursor: pointer;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 500;
             transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
         }
 
         .btn-primary {
@@ -321,7 +325,8 @@
             border-top: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            height: 200px;
+            height: 150px;
+            min-height: 150px;
         }
 
         .terminal-header {
@@ -713,11 +718,11 @@
 
         <!-- Control Bar -->
         <div class="control-bar">
-            <button class="btn btn-success" onclick="runPowerFlow()">
+            <button class="btn btn-success" onclick="runPowerFlowWasm()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M8 5v14l11-7z"/>
                 </svg>
-                Run Power Flow
+                Run Power Flow (WASM)
             </button>
             <button class="btn btn-primary" onclick="runContingency()">N-1 Analysis</button>
             <button class="btn btn-primary" onclick="runPVCurve()">PV Curve</button>
@@ -783,6 +788,10 @@
                         <h4>IEEE 30-Bus</h4>
                         <p>Larger IEEE test system</p>
                     </button>
+                    <button class="preset-btn" onclick="loadPreset('ieee118')">
+                        <h4>IEEE 118-Bus</h4>
+                        <p>Large system for WASM speed test</p>
+                    </button>
                     <button class="preset-btn" onclick="loadPreset('simple2')">
                         <h4>Simple 2-Bus</h4>
                         <p>Basic generator-load system</p>
@@ -819,7 +828,7 @@
                     <tr><td><strong>Delete</strong></td><td>Delete selected</td></tr>
                     <tr><td><strong>Escape</strong></td><td>Cancel / Deselect</td></tr>
                     <tr><td><strong>Ctrl+Z</strong></td><td>Undo</td></tr>
-                    <tr><td><strong>Enter</strong></td><td>Run Power Flow</td></tr>
+                    <tr><td><strong>Enter</strong></td><td>Run Power Flow (WASM)</td></tr>
                 </table>
                 <h4 style="color: var(--accent-blue); margin: 15px 0 10px;">Terminal Commands</h4>
                 <table class="results-table">
@@ -849,6 +858,38 @@
     // ============================================
     // POWERGRID PRO - POWER SYSTEMS SIMULATOR
     // ============================================
+
+    // ==================== WASM POWER FLOW SOLVER ====================
+    // Rust-compiled Newton-Raphson solver for high-performance analysis
+    const WASM_BASE64 = 'AGFzbQEAAAABQQtgAXwBfGAAAGACf38AYAF/AXxgAAF/YAABfGADf398AGAIf39/fHx8fH8AYAZ/fHx8fH8AYAJ/fAF/YAJ8fAF8AxMSAAABAgEDAwMDBAQFBgcICQEKBQMBACEGGQN/AUGAgMAAC38AQeHIgwELfwBB8MiDAQsHzAEPBm1lbW9yeQIACmJ1aWxkX3lidXMABBBnZXRfYnJhbmNoX3BmbG93AAUQZ2V0X2JyYW5jaF9xZmxvdwAGCmdldF9idXNfdmEABwpnZXRfYnVzX3ZtAAgNZ2V0X2NvbnZlcmdlZAAJDmdldF9pdGVyYXRpb25zAAoQZ2V0X21heF9taXNtYXRjaAALBGluaXQADApzZXRfYnJhbmNoAA0Hc2V0X2J1cwAOBXNvbHZlAA8KX19kYXRhX2VuZAMBC19faGVhcF9iYXNlAwIKuzoSmgEBAXwgAEQYLURU+yEZQBCRgICAACIARBgtRFT7IRnAoCAAIABEGC1EVPshCUBkGyIARBgtRFT7IRlAoCAAIABEGC1EVPshCcBjGyIAIACiIgBEAAAAAAAA4L+iRAAAAAAAAPA/oCAAIACiIgFEAAAAAAAAOECjoCAAIAGiIgFEAAAAAACAhsCjoCAAIAGiRAAAAAAAsONAo6ALmAEBAXwgAEQYLURU+yEZQBCRgICAACIARBgtRFT7IRnAoCAAIABEGC1EVPshCUBkGyIARBgtRFT7IRlAoCAAIABEGC1EVPshCcBjGyIAIAAgACAAoiIBoiIARAAAAAAAABjAo6AgASAAoiIARAAAAAAAAF5Ao6AgASAAoiIARAAAAAAAsLPAo6AgASAAokQAAAAAACYWQaOgC4kEBAF/AXwFfwt8QQAhAEEAKwOAm8CAACEBQQAoAqScwIAAIQJBsHAhA0EAIQQDQAJAAkACQAJAAkAgAiAERg0AIANFDQECQCAEQYCAwIAAai0AAA0AIANByKXXgABqQgA3AwAgA0H4ldeAAGpCADcDAAwFCyAAQbj+1oAAaigCACIFQZUBSw0CIABBoMvAgABqKAIAIgZBlgFPDQMgA0HQu8CAAGorAwAiByAHoiADQaDLwIAAaisDACIIIAiioCIJRBHqLYGZl3E9Yw0EIAVBA3QiBSsDyPjAgAAiChCAgICAACELIANByKXXgABqIAEgBSsD0JHAgAAiDCAKEIGAgIAAoiINIANB0JHAgABqKwMAIgqjIg4gByAJoyIPIAwgC6IiCyAKoyIHIAZBA3QiBSsD0JHAgAAiDCAFKwPI+MCAACIQEICAgIAAoqEiEaIgCJogCaMiCCAOIAwgEBCBgICAAKKhIgmioSANIANBgKzAgABqKwMARAAAAAAAAOA/oiIMoiAKo6EiDaIgByAMIAuiIAqjIAggEaIgDyAJoqCgIgiioaI5AwAgA0H4ldeAAGogASAHIA2iIA4gCKKgojkDAAwECw8LQfoBQfoBEIOAgIAAAAsgBUGWARCDgICAAAALIAZBlgEQg4CAgAAACyAEQQFqIQQgAEEEaiEAIANBCGohAwwACwsJABCQgICAAAAL5gYFB38DfAN/AXwCf0EAIQBBACgCoIbXgAAhAUEAIQIDQAJAAkACQAJAIAIgAUYNACACQQFqIQNBACEEIAJBlQFLIQUgACEGA0AgASAERg0EIAUNAiAEQZYBRg0DIAZB+IHBgABqQgA3AwAgBkGYgMyAAGpCADcDACAEQQFqIQQgBkEIaiEGDAALC0EAIQVBACgCpJzAgAAhAkGwcCEGQQAhBANAAkACQAJAIAIgBEYNACAGRQ0BIARBgIDAgABqLQAARQ0CIAVBuP7WgABqKAIAIgAgAU8NAiAFQaDLwIAAaigCACIDIAFPDQIgBkHQu8CAAGorAwAiByAHoiAGQaDLwIAAaisDACIIIAiioCIJRBHqLYGZl3E9Yw0CIAcgCaMhByAImiAJoyEIAkAgBkHQkcCAAGorAwAiCUQAAAAAAADwP2ENACAAQbAJbCIKQfiBwYAAaiILIABBA3QiAGoiDCAIIAkgCaIiDaMgDCsDAKA5AwAgCkGYgMyAAGoiCiAAaiIMIAcgDaMgDCsDAKA5AwAgA0GwCWwiDEH4gcGAAGoiDiADQQN0IgNqIg8gCCAPKwMAoDkDACAMQZiAzIAAaiIMIANqIg8gByAPKwMAoDkDACALIANqIgsgCysDACAIIAmjIgihOQMAIAogA2oiAyADKwMAIAcgCaMiB6E5AwAgDiAAaiIDIAMrAwAgCKE5AwAgDCAAaiIAIAArAwAgB6E5AwAMAwsgBkGArMCAAGorAwAhCSAAQbAJbCILQfiBwYAAaiIMIANBA3QiCmoiDiAOKwMAIAihOQMAIAtBmIDMgABqIgsgCmoiDiAOKwMAIAehOQMAIANBsAlsIgNB+IHBgABqIg4gAEEDdCIAaiIPIA8rAwAgCKE5AwAgA0GYgMyAAGoiAyAAaiIPIA8rAwAgB6E5AwAgDCAAaiIMIAlEAAAAAAAA4D+iIAigIgggDCsDAKA5AwAgCyAAaiIAIAcgACsDAKA5AwAgDiAKaiIAIAggACsDAKA5AwAgAyAKaiIAIAcgACsDAKA5AwAMAgsPC0H6AUH6ARCDgICAAAALIARBAWohBCAGQQhqIQYgBUEEaiEFDAALCyACQZYBEIOAgIAAAAtBlgFBlgEQg4CAgAAACyAAQbAJaiEAIAMhAgwACwswAQF8RAAAAAAAAAAAIQECQCAAQQAoAqScwIAATw0AIABBA3QrA6iG14AAIQELIAELMAEBfEQAAAAAAAAAACEBAkAgAEEAKAKknMCAAE8NACAAQQN0KwP4ldeAACEBCyABCzABAXxEAAAAAAAAAAAhAQJAIABBACgCoIbXgABPDQAgAEEDdCsDyPjAgAAhAQsgAQswAQF8RAAAAAAAAAAAIQECQCAAQQAoAqCG14AATw0AIABBA3QrA9CRwIAAIQELIAELCwBBAC0A4MiDgQALCwBBACgCoJzAgAALCwBBACsDqJzAgAAL2gMBAn9BACEDQQAgAjkDgJvAgABBACABQfoBIAFB+gFJGzYCpJzAgABBACAAQZYBIABBlgFJGzYCoIbXgABBACEEA0ACQAJAAkAgBEGWAUcNAEGwcCEBQYCAwIAAIQNBACEAA0AgAUUNAiADQQE6AAAgAEGgy8CAAGpBADYCACAAQbj+1oAAakEANgIAIAFB0LvAgABqQvuouL2U3J7CPzcDACABQaDLwIAAakKas+bMmbPm3D83AwAgAUGArMCAAGpCADcDACABQdCRwIAAakKAgICAgICA+D83AwAgAUH4ldeAAGpCADcDACABQcil14AAakIANwMAIANBAWohAyABQQhqIQEgAEEEaiEADAALC0EAIQEgBEEAOgCIm8CAACAEQQN0IgBCADcDyPjAgAAgAEKAgICAgICA+D83A9CRwIAAIABCADcDyKXXgAAgAEIANwP4rteAACAAQgA3A+jlwIAAIABCADcDmO/AgAADQCABQbAJRg0CIAMgAWoiAEH4gcGAAGpCADcDACAAQZiAzIAAakIANwMAIAFBCGohAQwACwtBAEIANwOonMCAAEEAQQA2AqCcwIAAQQBBADoA4MiDgQAPCyADQbAJaiEDIARBAWohBAwACwuAAQACQCAAQQAoAqScwIAATw0AIAAgBzoAgIDAgAAgAEECdCIHIAI2AqDLwIAAIAcgATYCuP7WgAAgAEEDdCIAIAM5A4CswIAAIAAgBDkD0LvAgAAgACAFOQOwnMCAACAARAAAAAAAAPA/IAYgBkQAAAAAAAAAAGEbOQOAgsCAAAsLTwACQCAAQQAoAqCG14AATw0AIAAgBToAiJvAgAAgAEEDdCIAIAI5A8j4wIAAIAAgATkD0JHAgAAgACADOQPIpdeAACAAIAQ5A/iu14AACwuNIgMPfwl8C38jgICAgABB4ARrIgIkgICAgABBACEDQQAoAqCG14AAIQRBACEFQQAhBkEAIQcDfyAFQZYBIAVBlgFLGyEIIAQgBWoiCUEDdEGA08CAAGohCiAJQegSbEHgkteAAGohCwJAAkACQAJAAkACQAJAAkACQAJAAkADQCAGQZYBIAZBlgFLGyEMAkADQAJAAkAgBCAHIg1GDQAgDUGWAUYNBSANQQFqIQcgDUGIm8CAAGotAAAOAwMBDwILAkAgBCAFakF/aiIODQBBASENQQBBAToA4MiDgQBBAEEANgKgnMCAAAwOC0EAQQA6AODIg4EAIANBAWohD0EAIRADQCAQIABGDQxBACEMQQAgEEEBaiIQNgKgnMCAAEEAIQ0CQANAAkACQAJAAkACQCANIARHDQBEAAAAAAAAAAAhEUEAIQ1BrAIhCEGosYOBACEHQQAhAwNAIA0gBCANIARLGyEMA0AgDCANIgZGDQMgDyAGQQFqIg1GDQALIAZBlQFLDQMgA0GsAkYNDiADQQN0IAZBA3QiBisDyKXXgAAgBisD6OXAgAChIhI5A6ixg4EAIBKZIhIgESASIBFkGyERIAdBCGohByAIQX9qIQggA0EBaiEDDAALCyANQZYBRg0FIA1BAWohAyANQQN0IggrA8j4wIAAIRMgCCsD0JHAgAAhFEQAAAAAAAAAACESQQAhDSAEIQdEAAAAAAAAAAAhFQNAIAdFDQQCQCANQbAJRg0AIBMgDUHI+MCAAGorAwChIhYQgICAgAAhESAVIBQgDUHQkcCAAGorAwCiIhcgDCANaiIGQZiAzIAAaisDACIYIBYQgYCAgAAiFqIgESAGQfiBwYAAaisDACIZoqGioCEVIBIgFyAYIBGiIBkgFqKgoqAhEiAHQX9qIQcgDUEIaiENDAELC0GWAUGWARCDgICAAAALQQAhDUGIxIOBACEGAkADQCAFIA1GDQEgDUGWAUYNECAGKAIAIgxBlgFPDQ8gCCANRg0OIAcgDEEDdCIMKwP4rteAACAMKwOY78CAAKEiEjkDACASmSISIBEgEiARZBshESANQQFqIQ0gB0EIaiEHIAZBBGohBgwACwtBACAROQOonMCAACARIAFjDQ9BACEGAkBB2ARFDQAgAkEIakEAQdgE/AsAC0GouNeAACEaQai414AAIRtBqLjXgAAhHEEAIQcCQANAIAQgBiINRg0BIA8gDUEBaiIGRg0AIA1BlQFLDQMgB0GWAUYNEiACQQhqIAdBAnRqIA02AgAgGkHoEmohGiAbQeASaiEbIBxBCGohHCAHQQFqIQcMAAsLQQAhDUGIxIOBACEGAkADQAJAIAUgDUcNAEEAIQ1BqLjXgAAhHQNAAkAgDSAHRw0AQQAhDQNAAkAgDSAHRw0AQQAhDQNAAkAgDSAFRw0AQQAhDANAAkACQAJAAkACQAJAAkACQCAMIAVGDQAgDEGWAUYNBiAMQQFqIRsgDEECdCgCiMSDgQAiA0EDdCINQZjvwIAAaiEcIA1ByPjAgABqIR4gA0GwCWwiBkGYgMyAAGohHSANQdCRwIAAaiEfIAZB+IHBgABqISBBACENQYjEg4EAIQYgDCAHaiIhQasCSyEiIBohDANAIAUgDUYNCCANQZYBRg0GIANBlgFPDQUgBigCACIIQZYBTw0EIAcgDWohIyAgIAhBA3QiJGorAwAhEiAfKwMAIRECQAJAAkAgAyAIRg0AIB0gJGorAwAhFiAeKwMAICQrA8j4wIAAoSIVEIGAgIAAIRcgFRCAgICAACEVICINBgJAICNBrAJPDQAgDCARIBYgF6IgEiAVoqGiOQMADAILICNBrAIQg4CAgAAACyAiDQQgI0GsAk8NASAMIBwrAwAgEaMgEiARoqE5AwALIA1BAWohDSAMQQhqIQwgBkEEaiEGDAELCyAjQawCEIOAgIAAAAtBACEIQYjL14AAIR1BqLjXgAAhGkGwuNeAACEgQZDL14AAIRwgCSEMA0ACQAJAAkACQAJAAkACQAJAAkACQCAIIA5HDQAgCiEIIAshAyAOIQ0DQAJAIA0NAEEAIQ1BrAIhCEGI08CAACEHQQAhAwNAIA0gBCANIARLGyEMA0AgDCANIgZGDQUgDyAGQQFqIg1GDQALIANBrAJGDQkgBkGWAU8NBSAGQQN0IgYgA0EDdCsDiNPAgAAgBisDyPjAgACgOQPI+MCAACAHQQhqIQcgCEF/aiEIIANBAWohAwwACwsgDUF/aiEMIA5BrAJLDQQgDEHgEmxBqLjXgABqISQgDEEDdCIjKwOosYOBACERIAghByADIQYDQAJAIA0gDkkNACAjIBEgJCAjaisDAKM5A4jTwIAAIAhBeGohCCADQZhtaiEDIAwhDQwCCyANQQFqIQ0gESAGKwMAIAcrAwCioSERIAdBCGohByAGQQhqIQYMAAsLCyAIQawCRg0HIAhBAWohGyAIQeASbCAIQQN0Ih9qIg1BqLjXgABqISIgDSsDqLjXgACZIRFBAiENIB0hByAIIQYDQAJAAkAgDCANRg0AIAggDWoiA0GtAkcNAUGsAkGsAhCDgICAAAALIBFEEeotgZmXcT1jDS8gBiAIRg0IIAZB4BJsQai414AAaiEHQQEhDSAaIQMDQAJAIAkgDUcNACAfKwOosYOBACERIB8gBkEDdCINKwOosYOBADkDqLGDgQAgDSAROQOosYOBAAwKCwJAIA1BrQJGDQAgAysDACERIAMgBysDADkDACAHIBE5AwAgDUEBaiENIAdBCGohByADQQhqIQMMAQsLQawCQawCEIOAgIAAAAsgA0F/aiAGIAcrAwCZIhIgEWQiAxshBiASIBEgAxshESANQQFqIQ0gB0HgEmohBwwACwtBACENQYjEg4EAIQYDQCAFIA1GDSAgDUGWAUYNAyAIIA1GDQQCQCAGKAIAIgxBlgFPDQAgDEEDdCIMIAwrA9CRwIAAIAcrAwBEAAAAAAAA8D+gojkD0JHAgAAgDUEBaiENIAdBCGohByAGQQRqIQYMAQsLIAxBlgEQg4CAgAAACyAGQZYBEIOAgIAAAAsgDEGsAhCDgICAAAALQZYBQZYBEIOAgIAAAAtBrAJBrAIQg4CAgAAAC0GsAkGsAhCDgICAAAALIB9BqLGDgQBqIR4gHCEjIBshAwJAA0AgAyAOTw0DIANBrAJPDQEgA0EBaiEkIANB4BJsIB9qIg0gDSsDqLjXgAAgIisDAKMiETkDqLjXgABBqwIhDSAjIQcgICEGA0ACQCAMIA1qQa0CRw0AIANBA3QiDSANKwOosYOBACARIB4rAwCioTkDqLGDgQAgI0HgEmohIyAkIQMMAgsCQCAIIA1GDQAgByAHKwMAIBEgBisDAKKhOQMAIA1Bf2ohDSAHQQhqIQcgBkEIaiEGDAELCwtBrAJBrAIQg4CAgAAACyADQawCEIOAgIAAAAtBrAJBrAIQg4CAgAAACyAcQegSaiEcICBB6BJqISAgGkHgEmohGiAMQX9qIQwgHUHoEmohHSAbIQgMAAsLICFBrAIQg4CAgAAACyAhQawCEIOAgIAAAAsgCEGWARCDgICAAAALIANBlgEQg4CAgAAAC0GWAUGWARCDgICAAAALQZYBQZYBEIOAgIAAAAsgGkHgEmohGiAbIQwMAAsLAkACQAJAAkACQAJAAkAgDUGWAUYNACANQQFqIRwgDSAHaiEkIA1BAnQoAojEg4EAIiNBA3QiDUHo5cCAAGohIiAjQbAJbCIGQfiBwYAAaiEeIA1ByPjAgABqIR0gDUHQkcCAAGohHyAGQZiAzIAAaiEgQQAhDSACQQhqIQYgGyEMA0AgByANRg0HIA1BlgFGDQIgI0GWAU8NAyAGKAIAIghBlgFPDQQgICAIQQN0IgNqKwMAIRIgHysDACERAkACQCAjIAhGDQAgJEGsAk8NByAMIAMrA9CRwIAAIBGaoiASIB0rAwAgAysDyPjAgAChIhEQgICAgACiIB4gA2orAwAgERCBgICAAKKgojkDAAwBCyAkQawCTw0HIAwgIisDACARIBIgEaKioTkDAAsgDUEBaiENIAxBCGohDCAGQQRqIQYMAAsLQZYBQZYBEIOAgIAAAAtBlgFBlgEQg4CAgAAACyAjQZYBEIOAgIAAAAsgCEGWARCDgICAAAALICRBrAIQg4CAgAAACyAkQawCEIOAgIAAAAsgG0HgEmohGyAcIQ0MAAsLAkACQAJAAkACQCANQZYBRg0AIA1BAWohISACQQhqIA1BAnRqKAIAIgNBA3QiDUHo5cCAAGohIiADQbAJbCIGQfiBwYAAaiEeIA1ByPjAgABqIR0gDUHQkcCAAGohHyAGQZiAzIAAaiEgQQAhDUGIxIOBACEGIBwhDANAIAUgDUYNBSANQZYBRg0CIANBlgFPDQMgBigCACIIQZYBTw0EIAcgDWohIyAgIAhBA3QiJGorAwAhEiAfKwMAIRECQAJAAkAgAyAIRg0AAkAgI0GrAksNACAMIBEgEiAdKwMAICQrA8j4wIAAoSIVEICAgIAAoiAeICRqKwMAIBUQgYCAgACioKI5AwAMAgsgI0GsAhCDgICAAAALICNBqwJLDQEgDCASIBGiICIrAwAgEaOgOQMACyANQQFqIQ0gDEEIaiEMIAZBBGohBgwBCwsgI0GsAhCDgICAAAALQZYBQZYBEIOAgIAAAAtBlgFBlgEQg4CAgAAACyADQZYBEIOAgIAAAAsgCEGWARCDgICAAAALIBxB4BJqIRwgISENDAALCwJAAkAgDUGWAUYNACANQQFqISEgAkEIaiANQQJ0aigCACIjQQN0Ig1BmO/AgABqISAgDUHI+MCAAGohIiAjQbAJbCIGQZiAzIAAaiEeIA1B0JHAgABqISQgBkH4gcGAAGohH0EAIQ0gAkEIaiEGIB0hDANAIAcgDUYNAgJAAkACQAJAIA1BlgFGDQAgI0GWAU8NASAGKAIAIghBlgFPDQIgHyAIQQN0IgNqKwMAIRIgJCsDACERAkAgIyAIRg0AIBEgAysD0JHAgACiIB4gA2orAwAgIisDACADKwPI+MCAAKEiERCBgICAAKIgEiAREICAgIAAoqGiIREMBAsgICsDAJogESASIBGioqEhEQwDC0GWAUGWARCDgICAAAALICNBlgEQg4CAgAAACyAIQZYBEIOAgIAAAAsgDCAROQMAIA1BAWohDSAMQQhqIQwgBkEEaiEGDAALC0GWAUGWARCDgICAAAALIB1B4BJqIR0gISENDAALCyANQQFqIg1BlwFGDQEgBigCACEMIAZBBGohBiAMQZYBSQ0ACyAMQZYBEIOAgIAAAAtBlgFBlgEQg4CAgAAACyAGQZYBEIOAgIAAAAsgDUGWARCDgICAAAALIAggFTkDmO/AgAAgCCASOQPo5cCAACAMQbAJaiEMIAMhDQwACwsLQZYBQZYBEIOAgIAAAAsCQCAGIAxGDQAgBkEBaiEGDAELCyAMQZYBEIOAgIAAAAsCQCAFIAhGDQAgBUECdCANNgKIxIOBAAsgCkEIaiEKIAtB6BJqIQsgCUEBaiEJIAVBAWohBQwBCwsgBUGWARCDgICAAAALQZYBQZYBEIOAgIAAAAtBrAJBrAIQg4CAgAAAC0GsAkGsAhCDgICAAAALIAxBlgEQg4CAgAAACyAFQZYBEIOAgIAAAAtBASENQQBBAToA4MiDgQAQgoCAgAAMAwtBlgFBlgEQg4CAgAAAC0GWAUGWARCDgICAAAALEIKAgIAAC0EAIQ0LIAJB4ARqJICAgIAAIA0PCyAHQX9qIQMMAAsLBwADQAwACwvYAwQFfgF/AX4DfwJAAkAgAL0iAkKAgICAgICA+P8Ag0KAgICAgICA+P8AUg0AQQAgASAAoCABoUQAAAAAAAAAAGIgAkJ/VRsPC0EAIQMCQCACQV9VDQBBASABvSIEQoCAgICAgID4/wCDIgVC////////////AIMiBiAEQj+HIgdCA4aEIAVC/////////wdYG0IAUhshAwtBACEIAkACQCADRQ0AIAVCgICAgICAgPj/AFENACACQv///////////wCDIgVCgYCAgICAgPj/AFQNAQsgACABoA8LAkACQCAFQoCAgICAgID4/wBSDQAgBkKBgICAgICA+P8AWiAGQoCAgICAgID4/wBWcg0BIABEAAAAAAAAAAAQkYCAgAAPCwJAIAZCgICAgICAgPh/Ug0ARAAAAAAAAAAAIAGjIAEgAiAEhEJ/VRsPCwJAAkAgBkL/////////9/8AWA0AIAJCPochBgwBCyABIACjIgkgCRCRgICAACEACyAAIAZCAX1C/////////weDQoCAgICAgICAQIR+vwsLCwcAA0AMAAsLC5IbAQBBgIDAAAuIGwEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEAAAAAAAAAAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAPA/AAAAAAAA8D8AAAAAAADwPwAAAAAAAFlAAPcDBG5hbWUAFBNwb3dlcmZsb3dfd2FzbS53YXNtAbsDEgAzX1pOMTRwb3dlcmZsb3dfd2FzbTEwY29zX2FwcHJveDE3aDhlZWYzNjQ5OGIwMmE2MTFFATNfWk4xNHBvd2VyZmxvd193YXNtMTBzaW5fYXBwcm94MTdoNzZmYzNjZDEwMWEzZDA1NEUCP19aTjE0cG93ZXJmbG93X3dhc20yMmNhbGN1bGF0ZV9icmFuY2hfZmxvd3MxN2g0Y2ZhZjg5NjJhYWRkZGExRQM6X1pONGNvcmU5cGFuaWNraW5nMThwYW5pY19ib3VuZHNfY2hlY2sxN2g2MmFiNmY1OTMzYmE5NzhkRQQKYnVpbGRfeWJ1cwUQZ2V0X2JyYW5jaF9wZmxvdwYQZ2V0X2JyYW5jaF9xZmxvdwcKZ2V0X2J1c192YQgKZ2V0X2J1c192bQkNZ2V0X2NvbnZlcmdlZAoOZ2V0X2l0ZXJhdGlvbnMLEGdldF9tYXhfbWlzbWF0Y2gMBGluaXQNCnNldF9icmFuY2gOB3NldF9idXMPBXNvbHZlEDBfWk40Y29yZTlwYW5pY2tpbmc5cGFuaWNfZm10MTdoY2I2YjJiNGJlMWY0YmUzOEURBGZtb2QHEgEAD19fc3RhY2tfcG9pbnRlcgkIAQAFLmRhdGEATQlwcm9kdWNlcnMCCGxhbmd1YWdlAQRSdXN0AAxwcm9jZXNzZWQtYnkBBXJ1c3RjHTEuOTIuMCAoZGVkNWMwNmNmIDIwMjUtMTItMDgpAJQBD3RhcmdldF9mZWF0dXJlcworC2J1bGstbWVtb3J5Kw9idWxrLW1lbW9yeS1vcHQrFmNhbGwtaW5kaXJlY3Qtb3ZlcmxvbmcrCm11bHRpdmFsdWUrD211dGFibGUtZ2xvYmFscysTbm9udHJhcHBpbmctZnB0b2ludCsPcmVmZXJlbmNlLXR5cGVzKwhzaWduLWV4dA==';
+
+    // WASM module instance (loaded on startup)
+    let wasmModule = null;
+    let wasmExports = null;
+    let wasmReady = false;
+
+    // Load WASM module from base64
+    async function loadWasm() {
+        try {
+            const binaryString = atob(WASM_BASE64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            const module = await WebAssembly.instantiate(bytes.buffer, {});
+            wasmModule = module.instance;
+            wasmExports = wasmModule.exports;
+            wasmReady = true;
+            console.log('WASM Power Flow Solver loaded successfully');
+            return true;
+        } catch (e) {
+            console.error('Failed to load WASM:', e);
+            return false;
+        }
+    }
+
+    // Initialize WASM on page load
+    loadWasm();
 
     // ==================== STATE ====================
     const state = {
@@ -1718,7 +1759,7 @@
                 render();
                 break;
             case 'enter':
-                runPowerFlow();
+                runPowerFlowWasm();
                 break;
         }
     });
@@ -2541,6 +2582,166 @@
         }
     }
 
+    // ============================================
+    // WASM POWER FLOW SOLVER (Rust-compiled)
+    // ============================================
+
+    function runPowerFlowWasm() {
+        if (!wasmReady) {
+            log('WASM solver not ready, falling back to JavaScript solver...', 'warning');
+            return runPowerFlow();
+        }
+
+        // Validation
+        if (state.buses.length === 0) {
+            log('Error: No buses in system', 'error');
+            return false;
+        }
+
+        const slackBuses = state.buses.filter(b => b.type === 'slack');
+        if (slackBuses.length === 0) {
+            log('Error: No slack bus defined. Set one bus as Slack type.', 'error');
+            return false;
+        }
+
+        log('Starting WASM Newton-Raphson Power Flow (Rust)...', 'info');
+        const startTime = performance.now();
+
+        try {
+            // Create bus index mapping
+            const busIndex = {};
+            state.buses.forEach((bus, i) => {
+                busIndex[bus.id] = i;
+            });
+            const n = state.buses.length;
+
+            // Count branches (lines + transformers)
+            const nBranches = state.lines.length + state.transformers.length;
+
+            // Initialize WASM solver
+            wasmExports.init(n, nBranches, state.baseMVA);
+
+            // Calculate scheduled power injections (in pu)
+            const Psch = new Array(n).fill(0);
+            const Qsch = new Array(n).fill(0);
+
+            // Add generator power
+            state.generators.filter(g => g.status).forEach(gen => {
+                const idx = busIndex[gen.busId];
+                if (idx !== undefined) {
+                    Psch[idx] += gen.pg / state.baseMVA;
+                }
+            });
+
+            // Subtract load power
+            state.loads.filter(l => l.status).forEach(load => {
+                const idx = busIndex[load.busId];
+                if (idx !== undefined) {
+                    Psch[idx] -= load.pl / state.baseMVA;
+                    Qsch[idx] -= load.ql / state.baseMVA;
+                }
+            });
+
+            // Set bus data in WASM
+            state.buses.forEach((bus, i) => {
+                let busType = 0; // PQ
+                if (bus.type === 'pv') busType = 1;
+                else if (bus.type === 'slack') busType = 2;
+
+                let vm = 1.0;
+                if (bus.type === 'pv') {
+                    const gen = state.generators.find(g => g.busId === bus.id && g.status);
+                    vm = gen ? gen.vset : 1.0;
+                } else if (bus.type === 'slack') {
+                    vm = 1.0;
+                }
+
+                wasmExports.set_bus(i, vm, 0.0, Psch[i], Qsch[i], busType);
+            });
+
+            // Set branch data in WASM
+            let brIdx = 0;
+
+            // Lines
+            state.lines.filter(l => l.status).forEach(line => {
+                const fromIdx = busIndex[line.fromBus];
+                const toIdx = busIndex[line.toBus];
+                if (fromIdx !== undefined && toIdx !== undefined) {
+                    wasmExports.set_branch(brIdx, fromIdx, toIdx, line.r, line.x, line.b || 0, 1.0, 1);
+                    brIdx++;
+                }
+            });
+
+            // Transformers
+            state.transformers.filter(t => t.status).forEach(xfmr => {
+                const fromIdx = busIndex[xfmr.fromBus];
+                const toIdx = busIndex[xfmr.toBus];
+                if (fromIdx !== undefined && toIdx !== undefined) {
+                    wasmExports.set_branch(brIdx, fromIdx, toIdx, xfmr.r, xfmr.x, 0, xfmr.tap || 1.0, 1);
+                    brIdx++;
+                }
+            });
+
+            // Build Y-bus matrix
+            wasmExports.build_ybus();
+
+            // Run power flow
+            const maxIter = 50;
+            const tolerance = 1e-6;
+            const converged = wasmExports.solve(maxIter, tolerance);
+            const iterations = wasmExports.get_iterations();
+            const maxMismatch = wasmExports.get_max_mismatch();
+
+            // Log iteration info
+            log(`  WASM solved in ${iterations} iterations, max mismatch: ${maxMismatch.toFixed(6)} pu`, 'muted');
+
+            if (!converged) {
+                log(`Warning: Did not converge after ${maxIter} iterations`, 'warning');
+            } else {
+                log(`Converged in ${iterations} iterations (tolerance: ${tolerance})`, 'success');
+            }
+
+            // Retrieve results from WASM
+            state.buses.forEach((bus, i) => {
+                bus.vm = wasmExports.get_bus_vm(i);
+                bus.va = wasmExports.get_bus_va(i);
+            });
+
+            // Get line flows from WASM (and calculate using JS for display)
+            const Y = buildYBus(busIndex, n);
+            const V = state.buses.map(b => b.vm);
+            const theta = state.buses.map(b => b.va);
+            calculateLineFlows(Y, V, theta, busIndex);
+
+            // Calculate total losses
+            let totalPLoss = 0;
+            state.lines.forEach(line => {
+                if (line.pLoss !== undefined) {
+                    totalPLoss += line.pLoss;
+                }
+            });
+
+            const elapsed = (performance.now() - startTime).toFixed(1);
+            log(`WASM Power flow completed in ${elapsed}ms`, 'success');
+            log(`Total system losses: ${(totalPLoss * state.baseMVA).toFixed(2)} MW`, 'info');
+
+            state.results = { converged: !!converged, iterations };
+            updateStatusBar();
+            render();
+
+            if (state.selectedType && state.selectedId) {
+                showPropertyPanel(state.selectedType, state.selectedId);
+            }
+
+            return !!converged;
+
+        } catch (err) {
+            log(`WASM Power flow error: ${err.message}, falling back to JS solver...`, 'error');
+            console.error(err);
+            return runPowerFlow();
+        }
+    }
+
     function buildYBus(busIndex, n) {
         // Initialize complex Y matrix as [real, imag] pairs
         const Y = [];
@@ -3290,6 +3491,9 @@
             case 'ieee30':
                 loadIEEE30Bus();
                 break;
+            case 'ieee118':
+                loadIEEE118Bus();
+                break;
             case 'radial':
                 loadRadialFeeder();
                 break;
@@ -3464,6 +3668,131 @@
         createLine(state.buses[10].id, state.buses[15].id);
 
         log('Loaded IEEE 30-Bus System', 'success');
+        render();
+    }
+
+    function loadIEEE118Bus() {
+        clearAll_silent();
+
+        // IEEE 118-bus system - simplified representation
+        // Layout in a grid pattern for visibility
+        const cols = 12;
+        const rowSpacing = 60;
+        const colSpacing = 80;
+        const startX = 80;
+        const startY = 60;
+
+        // Create 118 buses
+        for (let i = 0; i < 118; i++) {
+            const row = Math.floor(i / cols);
+            const col = i % cols;
+            const x = startX + col * colSpacing;
+            const y = startY + row * rowSpacing;
+            createBus(x, y);
+            state.buses[i].name = `Bus ${i + 1}`;
+            state.buses[i].vnom = 138; // Most buses at 138kV
+        }
+
+        // Set bus types based on IEEE 118 standard data
+        // Slack bus at bus 69 (index 68)
+        state.buses[68].type = 'slack';
+
+        // PV buses (generators) - IEEE 118 has generators at these buses
+        const pvBuses = [0, 3, 5, 7, 9, 11, 14, 17, 23, 24, 25, 26, 30, 31, 33, 35, 39, 41, 45, 48, 53, 54, 55, 58, 60, 61, 64, 65, 68, 71, 72, 75, 76, 79, 84, 86, 88, 89, 99, 102, 103, 104, 106, 110, 111, 112, 115, 116];
+        pvBuses.forEach(idx => {
+            if (idx < 118 && idx !== 68) {
+                state.buses[idx].type = 'pv';
+            }
+        });
+
+        // Create generators at PV buses
+        pvBuses.forEach((idx, i) => {
+            if (idx < 118) {
+                createGenerator(state.buses[idx].id);
+                const gen = state.generators[state.generators.length - 1];
+                gen.pg = 50 + Math.random() * 200; // Random 50-250 MW
+                gen.vset = 1.0 + (Math.random() - 0.5) * 0.1; // 0.95-1.05 pu
+            }
+        });
+
+        // Create loads on most buses (IEEE 118 has 99 loads)
+        const loadBuses = [];
+        for (let i = 0; i < 118; i++) {
+            if (!pvBuses.includes(i) || Math.random() > 0.5) {
+                loadBuses.push(i);
+            }
+        }
+        loadBuses.slice(0, 99).forEach(idx => {
+            createLoad(state.buses[idx].id);
+            const load = state.loads[state.loads.length - 1];
+            load.pl = 10 + Math.random() * 80; // 10-90 MW
+            load.ql = load.pl * (0.2 + Math.random() * 0.3); // PF 0.85-0.98
+        });
+
+        // Create branches - IEEE 118 has 186 branches
+        // Create horizontal connections
+        for (let row = 0; row < 10; row++) {
+            for (let col = 0; col < cols - 1; col++) {
+                const i = row * cols + col;
+                const j = i + 1;
+                if (i < 118 && j < 118) {
+                    createLine(state.buses[i].id, state.buses[j].id);
+                    const line = state.lines[state.lines.length - 1];
+                    line.r = 0.001 + Math.random() * 0.02;
+                    line.x = 0.01 + Math.random() * 0.1;
+                    line.b = Math.random() * 0.05;
+                }
+            }
+        }
+
+        // Create vertical connections
+        for (let row = 0; row < 9; row++) {
+            for (let col = 0; col < cols; col++) {
+                const i = row * cols + col;
+                const j = i + cols;
+                if (i < 118 && j < 118 && Math.random() > 0.3) {
+                    createLine(state.buses[i].id, state.buses[j].id);
+                    const line = state.lines[state.lines.length - 1];
+                    line.r = 0.001 + Math.random() * 0.02;
+                    line.x = 0.01 + Math.random() * 0.1;
+                    line.b = Math.random() * 0.05;
+                }
+            }
+        }
+
+        // Add some diagonal connections for meshed network
+        for (let i = 0; i < 30; i++) {
+            const a = Math.floor(Math.random() * 117);
+            const b = Math.floor(Math.random() * 117);
+            if (a !== b && Math.abs(a - b) > 1 && Math.abs(a - b) < 20) {
+                // Check if line doesn't already exist
+                const exists = state.lines.some(l =>
+                    (l.fromBus === state.buses[a].id && l.toBus === state.buses[b].id) ||
+                    (l.fromBus === state.buses[b].id && l.toBus === state.buses[a].id)
+                );
+                if (!exists) {
+                    createLine(state.buses[a].id, state.buses[b].id);
+                    const line = state.lines[state.lines.length - 1];
+                    line.r = 0.001 + Math.random() * 0.02;
+                    line.x = 0.01 + Math.random() * 0.1;
+                    line.b = Math.random() * 0.03;
+                }
+            }
+        }
+
+        // Add some transformers
+        for (let i = 0; i < 9; i++) {
+            const from = Math.floor(Math.random() * 117);
+            const to = Math.floor(Math.random() * 117);
+            if (from !== to) {
+                createTransformer(state.buses[from].id, state.buses[to].id);
+                const xfmr = state.transformers[state.transformers.length - 1];
+                xfmr.tap = 0.95 + Math.random() * 0.1;
+            }
+        }
+
+        log(`Loaded IEEE 118-Bus System: ${state.buses.length} buses, ${state.generators.length} generators, ${state.loads.length} loads, ${state.lines.length} lines, ${state.transformers.length} transformers`, 'success');
+        log('This large system is ideal for testing WASM solver performance!', 'info');
         render();
     }
 
