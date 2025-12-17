@@ -3,480 +3,3557 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rust + WebAssembly Particle Simulation</title>
+    <title>PowerGrid Pro - Power Systems Simulator</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-panel: rgba(255,255,255,0.05);
+            --border-color: rgba(255,255,255,0.1);
+            --text-primary: #e0e0e0;
+            --text-secondary: #888;
+            --accent-blue: #48dbfb;
+            --accent-green: #26de81;
+            --accent-yellow: #feca57;
+            --accent-red: #ff6b6b;
+            --accent-purple: #a55eea;
         }
-        
+
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
             min-height: 100vh;
-            color: #e0e0e0;
-            padding: 20px;
+            color: var(--text-primary);
+            overflow: hidden;
         }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid var(--border-color);
         }
-        
-        h1 {
-            text-align: center;
-            margin-bottom: 10px;
-            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb);
+
+        .header h1 {
+            font-size: 1.4rem;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            font-size: 2.5rem;
         }
-        
-        .subtitle {
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: grid;
+            grid-template-columns: 70px 1fr 280px;
+            grid-template-rows: 1fr auto auto;
+            height: calc(100vh - 52px);
+            gap: 1px;
+            background: var(--border-color);
+        }
+
+        /* Toolbar */
+        .toolbar {
+            grid-row: 1 / 4;
+            background: var(--bg-panel);
+            padding: 10px 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .toolbar-section {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 5px;
+        }
+
+        .toolbar-section:last-child {
+            border-bottom: none;
+        }
+
+        .toolbar-label {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
             text-align: center;
-            color: #888;
-            margin-bottom: 30px;
-            font-size: 1.1rem;
+            margin-bottom: 5px;
+            text-transform: uppercase;
         }
-        
-        .main-content {
+
+        .tool-btn {
+            width: 54px;
+            height: 54px;
+            border: 1px solid var(--border-color);
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            transition: all 0.2s;
+            color: var(--text-primary);
+        }
+
+        .tool-btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--accent-blue);
+        }
+
+        .tool-btn.active {
+            background: rgba(72, 219, 251, 0.2);
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 10px rgba(72, 219, 251, 0.3);
+        }
+
+        .tool-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .tool-btn span {
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+        }
+
+        /* Canvas Area */
+        .canvas-container {
+            background: #0a0a15;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        .canvas-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .canvas-info {
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Property Panel */
+        .property-panel {
+            grid-row: 1 / 2;
+            background: var(--bg-panel);
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .panel-header {
+            font-size: 0.9rem;
+            color: var(--accent-blue);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-header::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--accent-blue);
+            border-radius: 50%;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px 10px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 10px;
         }
-        
-        @media (max-width: 1000px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
+
+        .no-selection {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 40px 20px;
+            font-size: 0.85rem;
         }
-        
-        .panel {
-            background: rgba(255,255,255,0.05);
+
+        /* Control Bar */
+        .control-bar {
+            grid-column: 2 / 4;
+            background: var(--bg-panel);
+            padding: 10px 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--accent-green) 0%, #20bf6b 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--accent-yellow) 0%, #f7b731 100%);
+            color: #333;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--accent-red) 0%, #eb3b5a 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .control-divider {
+            width: 1px;
+            height: 30px;
+            background: var(--border-color);
+            margin: 0 5px;
+        }
+
+        .status-indicator {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .status-indicator span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-dot.green { background: var(--accent-green); }
+        .status-dot.yellow { background: var(--accent-yellow); }
+        .status-dot.red { background: var(--accent-red); }
+
+        /* Debug Terminal */
+        .terminal {
+            grid-column: 2 / 4;
+            background: #0d1117;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            height: 200px;
+        }
+
+        .terminal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 15px;
+            background: #161b22;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .terminal-title {
+            font-size: 0.85rem;
+            color: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .terminal-tabs {
+            display: flex;
+            gap: 5px;
+        }
+
+        .terminal-tab {
+            padding: 4px 12px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        .terminal-tab.active {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .terminal-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 15px;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.8rem;
+            line-height: 1.6;
+        }
+
+        .terminal-line {
+            margin-bottom: 2px;
+        }
+
+        .terminal-line.info { color: var(--accent-blue); }
+        .terminal-line.success { color: var(--accent-green); }
+        .terminal-line.warning { color: var(--accent-yellow); }
+        .terminal-line.error { color: var(--accent-red); }
+        .terminal-line.muted { color: var(--text-secondary); }
+
+        .terminal-input-row {
+            display: flex;
+            align-items: center;
+            padding: 8px 15px;
+            background: rgba(0,0,0,0.3);
+            border-top: 1px solid #30363d;
+        }
+
+        .terminal-prompt {
+            color: var(--accent-green);
+            margin-right: 8px;
+        }
+
+        .terminal-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.8rem;
+        }
+
+        .terminal-input:focus {
+            outline: none;
+        }
+
+        /* Results table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+            margin-top: 10px;
+        }
+
+        .results-table th, .results-table td {
+            padding: 6px 10px;
+            text-align: left;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .results-table th {
+            color: var(--accent-blue);
+            font-weight: 500;
+        }
+
+        .results-table tr:hover td {
+            background: rgba(255,255,255,0.03);
+        }
+
+        /* Voltage coloring */
+        .voltage-low { color: var(--accent-red); }
+        .voltage-normal { color: var(--accent-green); }
+        .voltage-high { color: var(--accent-yellow); }
+
+        /* Loading indicator */
+        .loading-high { color: var(--accent-red); }
+        .loading-medium { color: var(--accent-yellow); }
+        .loading-low { color: var(--accent-green); }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
             border-radius: 12px;
-            padding: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid var(--border-color);
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: auto;
         }
-        
-        .panel h2 {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            color: #48dbfb;
+
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            color: var(--accent-blue);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Preset buttons */
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .preset-btn {
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--accent-blue);
+        }
+
+        .preset-btn h4 {
+            color: var(--text-primary);
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .preset-btn p {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Context menu */
+        .context-menu {
+            position: fixed;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 5px 0;
+            min-width: 150px;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .context-menu.active {
+            display: block;
+        }
+
+        .context-menu-item {
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 0.85rem;
             display: flex;
             align-items: center;
             gap: 10px;
         }
-        
-        .panel h2::before {
-            content: '';
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: #48dbfb;
-            border-radius: 50%;
+
+        .context-menu-item:hover {
+            background: rgba(255,255,255,0.1);
         }
-        
-        canvas {
-            width: 100%;
-            height: 450px;
-            background: #0a0a15;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        
-        .code-container {
-            background: #0d1117;
-            border-radius: 8px;
-            overflow: hidden;
-            max-height: 450px;
-            overflow-y: auto;
-        }
-        
-        .code-header {
-            background: #161b22;
-            padding: 10px 15px;
-            font-size: 0.9rem;
-            color: #8b949e;
-            border-bottom: 1px solid #30363d;
-            display: flex;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-        }
-        
-        pre {
-            margin: 0;
-            padding: 15px;
-            font-family: 'Fira Code', 'Consolas', monospace;
-            font-size: 0.85rem;
-            line-height: 1.5;
-            color: #c9d1d9;
-            overflow-x: auto;
-        }
-        
-        .keyword { color: #ff7b72; }
-        .function { color: #d2a8ff; }
-        .type { color: #79c0ff; }
-        .string { color: #a5d6ff; }
-        .comment { color: #8b949e; }
-        .number { color: #ffa657; }
-        .macro { color: #ffa657; }
-        
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-        
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        button:active {
-            transform: translateY(0);
-        }
-        
-        .stats {
-            margin-top: 15px;
-            font-size: 0.9rem;
-            color: #888;
-        }
-        
-        .stats span {
-            color: #feca57;
-            font-weight: bold;
-        }
-        
-        .info-box {
-            background: rgba(72, 219, 251, 0.1);
-            border-left: 3px solid #48dbfb;
-            padding: 15px;
-            margin-top: 20px;
-            border-radius: 0 8px 8px 0;
-            font-size: 0.9rem;
-            line-height: 1.6;
-        }
-        
-        .info-box strong {
-            color: #48dbfb;
+
+        .context-menu-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 5px 0;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Rust + WebAssembly</h1>
-        <p class="subtitle">N-Body Gravity Simulation Running in Your Browser</p>
-        
-        <div class="main-content">
-            <div class="panel">
-                <h2>Live Simulation</h2>
-                <canvas id="canvas"></canvas>
-                <div class="controls">
-                    <button onclick="reset()">Reset</button>
-                    <button onclick="addParticles(10)">Add 10 Particles</button>
-                    <button onclick="togglePause()">Pause/Play</button>
-                    <button onclick="explode()">Explode!</button>
-                </div>
-                <div class="stats">
-                    Particles: <span id="count">0</span> | 
-                    FPS: <span id="fps">0</span> | 
-                    Physics: <span id="physics-time">0</span>ms
-                </div>
-            </div>
-            
-            <div class="panel">
-                <h2>Rust Source Code</h2>
-                <div class="code-container">
-                    <div class="code-header">
-                        <span>particles.rs</span>
-                        <span>Compiled to WebAssembly</span>
-                    </div>
-                    <pre><code><span class="comment">// This Rust code compiles to the WebAssembly running the simulation</span>
-<span class="comment">// Memory layout: [x, y, vx, vy] per particle (4 x f32 = 16 bytes)</span>
-
-<span class="keyword">const</span> G: <span class="type">f32</span> = <span class="number">0.5</span>;           <span class="comment">// Gravity constant</span>
-<span class="keyword">const</span> DT: <span class="type">f32</span> = <span class="number">0.016</span>;         <span class="comment">// Time step (~60fps)</span>
-<span class="keyword">const</span> SOFTENING: <span class="type">f32</span> = <span class="number">5.0</span>;   <span class="comment">// Prevents div-by-zero</span>
-
-<span class="macro">#[repr(C)]</span>
-<span class="keyword">struct</span> <span class="type">Particle</span> {
-    x: <span class="type">f32</span>,
-    y: <span class="type">f32</span>,
-    vx: <span class="type">f32</span>,
-    vy: <span class="type">f32</span>,
-}
-
-<span class="macro">#[no_mangle]</span>
-<span class="keyword">pub extern</span> <span class="string">"C"</span> <span class="keyword">fn</span> <span class="function">init_particle</span>(
-    i: <span class="type">usize</span>, x: <span class="type">f32</span>, y: <span class="type">f32</span>, vx: <span class="type">f32</span>, vy: <span class="type">f32</span>
-) {
-    <span class="keyword">unsafe</span> {
-        PARTICLES[i] = <span class="type">Particle</span> { x, y, vx, vy };
-    }
-}
-
-<span class="macro">#[no_mangle]</span>
-<span class="keyword">pub extern</span> <span class="string">"C"</span> <span class="keyword">fn</span> <span class="function">update</span>(n: <span class="type">usize</span>) {
-    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="number">0</span>..n {
-        <span class="keyword">let</span> (xi, yi) = <span class="function">get_pos</span>(i);
-        <span class="keyword">let</span> (<span class="keyword">mut</span> ax, <span class="keyword">mut</span> ay) = (<span class="number">0.0</span>, <span class="number">0.0</span>);
-        
-        <span class="comment">// Calculate gravitational force from all other particles</span>
-        <span class="keyword">for</span> j <span class="keyword">in</span> <span class="number">0</span>..n {
-            <span class="keyword">if</span> i != j {
-                <span class="keyword">let</span> (xj, yj) = <span class="function">get_pos</span>(j);
-                <span class="keyword">let</span> (dx, dy) = (xj - xi, yj - yi);
-                
-                <span class="comment">// Distance with softening to prevent singularity</span>
-                <span class="keyword">let</span> dist_sq = dx*dx + dy*dy + SOFTENING;
-                <span class="keyword">let</span> dist = dist_sq.<span class="function">sqrt</span>();
-                
-                <span class="comment">// F = G / r^3 (normalized direction)</span>
-                <span class="keyword">let</span> force = G / (dist_sq * dist);
-                
-                ax += dx * force;
-                ay += dy * force;
-            }
-        }
-        
-        <span class="comment">// Update velocity: v += a * dt</span>
-        <span class="keyword">let</span> vx = <span class="function">get_vx</span>(i) + ax * DT;
-        <span class="keyword">let</span> vy = <span class="function">get_vy</span>(i) + ay * DT;
-        <span class="function">set_velocity</span>(i, vx, vy);
-        
-        <span class="comment">// Update position: x += v * dt</span>
-        <span class="function">set_pos</span>(i, xi + vx * DT, yi + vy * DT);
-    }
-}</code></pre>
-                </div>
-            </div>
-        </div>
-        
-        <div class="info-box">
-            <strong>How it works:</strong> The particle physics (N-body gravity simulation) runs entirely in 
-            WebAssembly compiled from Rust. JavaScript handles rendering and user interaction, while Rust/WASM 
-            handles all the math. Click the canvas to attract particles! The O(n²) algorithm calculates 
-            gravitational force between every pair of particles each frame.
+    <!-- Header -->
+    <div class="header">
+        <h1>PowerGrid Pro</h1>
+        <div class="header-buttons">
+            <button class="btn btn-secondary" onclick="showLoadPresets()">Load Preset</button>
+            <button class="btn btn-secondary" onclick="exportSystem()">Export JSON</button>
+            <button class="btn btn-secondary" onclick="importSystem()">Import JSON</button>
+            <button class="btn btn-secondary" onclick="showHelp()">Help</button>
         </div>
     </div>
 
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="toolbar-section">
+                <div class="toolbar-label">Components</div>
+                <button class="tool-btn" data-tool="bus" title="Add Bus (B)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="4" y1="12" x2="20" y2="12"/>
+                        <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                    </svg>
+                    <span>Bus</span>
+                </button>
+                <button class="tool-btn" data-tool="generator" title="Add Generator (G)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="6"/>
+                        <path d="M9 12 Q12 8 15 12 Q12 16 9 12"/>
+                    </svg>
+                    <span>Gen</span>
+                </button>
+                <button class="tool-btn" data-tool="load" title="Add Load (L)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 6 L12 12"/>
+                        <path d="M8 12 L16 12 L12 20 Z" fill="currentColor"/>
+                    </svg>
+                    <span>Load</span>
+                </button>
+                <button class="tool-btn" data-tool="line" title="Add Line (N)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="4" y1="12" x2="20" y2="12"/>
+                        <circle cx="4" cy="12" r="2" fill="currentColor"/>
+                        <circle cx="20" cy="12" r="2" fill="currentColor"/>
+                    </svg>
+                    <span>Line</span>
+                </button>
+                <button class="tool-btn" data-tool="transformer" title="Add Transformer (T)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="9" cy="12" r="4"/>
+                        <circle cx="15" cy="12" r="4"/>
+                    </svg>
+                    <span>Xfmr</span>
+                </button>
+                <button class="tool-btn" data-tool="shunt" title="Add Shunt (H)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="4" x2="12" y2="8"/>
+                        <line x1="8" y1="8" x2="16" y2="8"/>
+                        <line x1="8" y1="12" x2="16" y2="12"/>
+                        <line x1="12" y1="12" x2="12" y2="20"/>
+                    </svg>
+                    <span>Shunt</span>
+                </button>
+            </div>
+            <div class="toolbar-section">
+                <div class="toolbar-label">Tools</div>
+                <button class="tool-btn active" data-tool="select" title="Select (S)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 3 L19 12 L12 13 L15 21 L12 22 L9 14 L5 17 Z" fill="currentColor"/>
+                    </svg>
+                    <span>Select</span>
+                </button>
+                <button class="tool-btn" data-tool="connect" title="Connect (C)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="6" cy="6" r="3"/>
+                        <circle cx="18" cy="18" r="3"/>
+                        <line x1="8" y1="8" x2="16" y2="16"/>
+                    </svg>
+                    <span>Connect</span>
+                </button>
+                <button class="tool-btn" data-tool="delete" title="Delete (D)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
+                    </svg>
+                    <span>Delete</span>
+                </button>
+            </div>
+            <div class="toolbar-section">
+                <div class="toolbar-label">View</div>
+                <button class="tool-btn" data-tool="pan" title="Pan (P)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2 L12 6 M12 18 L12 22 M2 12 L6 12 M18 12 L22 12"/>
+                        <path d="M12 2 L10 4 M12 2 L14 4 M12 22 L10 20 M12 22 L14 20"/>
+                        <path d="M2 12 L4 10 M2 12 L4 14 M22 12 L20 10 M22 12 L20 14"/>
+                    </svg>
+                    <span>Pan</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Canvas -->
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="canvas-overlay">
+                <div class="canvas-info" id="zoom-info">Zoom: 100%</div>
+                <div class="canvas-info" id="mouse-info">X: 0, Y: 0</div>
+            </div>
+        </div>
+
+        <!-- Property Panel -->
+        <div class="property-panel">
+            <div class="panel-header">Properties</div>
+            <div id="property-content">
+                <div class="no-selection">
+                    <p>Select a component to view and edit its properties</p>
+                    <br>
+                    <p style="font-size: 0.75rem;">Tip: Use the toolbar to add buses, generators, loads, and lines</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Bar -->
+        <div class="control-bar">
+            <button class="btn btn-success" onclick="runPowerFlow()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+                Run Power Flow
+            </button>
+            <button class="btn btn-primary" onclick="runContingency()">N-1 Analysis</button>
+            <button class="btn btn-primary" onclick="runPVCurve()">PV Curve</button>
+            <button class="btn btn-primary" onclick="runQVCurve()">QV Curve</button>
+            <button class="btn btn-warning" onclick="runEconomicDispatch()">Econ Dispatch</button>
+            <div class="control-divider"></div>
+            <button class="btn btn-secondary" onclick="clearResults()">Clear Results</button>
+            <button class="btn btn-danger" onclick="clearAll()">Clear All</button>
+            <div class="status-indicator">
+                <span><div class="status-dot" id="status-dot"></div> <span id="status-text">Ready</span></span>
+                <span>Buses: <strong id="bus-count">0</strong></span>
+                <span>Branches: <strong id="branch-count">0</strong></span>
+            </div>
+        </div>
+
+        <!-- Terminal -->
+        <div class="terminal">
+            <div class="terminal-header">
+                <div class="terminal-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 17l6-6-6-6M12 19h8"/>
+                    </svg>
+                    Debug Terminal
+                </div>
+                <div class="terminal-tabs">
+                    <button class="terminal-tab active" data-tab="console">Console</button>
+                    <button class="terminal-tab" data-tab="results">Results</button>
+                    <button class="terminal-tab" data-tab="buses">Bus Data</button>
+                    <button class="terminal-tab" data-tab="branches">Branch Data</button>
+                </div>
+                <button class="btn btn-secondary" onclick="clearTerminal()" style="padding: 4px 10px; font-size: 0.75rem;">Clear</button>
+            </div>
+            <div class="terminal-content" id="terminal-content">
+                <div class="terminal-line info">> PowerGrid Pro initialized</div>
+                <div class="terminal-line muted">> Ready to build your power system. Add buses first, then connect with lines.</div>
+                <div class="terminal-line muted">> Type 'help' for available commands</div>
+            </div>
+            <div class="terminal-input-row">
+                <span class="terminal-prompt">></span>
+                <input type="text" class="terminal-input" id="terminal-input" placeholder="Enter command..." onkeypress="handleTerminalInput(event)">
+            </div>
+        </div>
+    </div>
+
+    <!-- Preset Modal -->
+    <div class="modal-overlay" id="preset-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Load Preset System</h3>
+                <button class="modal-close" onclick="closeModal('preset-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="preset-grid">
+                    <button class="preset-btn" onclick="loadPreset('ieee9')">
+                        <h4>IEEE 9-Bus</h4>
+                        <p>WSCC 3-machine, 9-bus system</p>
+                    </button>
+                    <button class="preset-btn" onclick="loadPreset('ieee14')">
+                        <h4>IEEE 14-Bus</h4>
+                        <p>Classic IEEE test system</p>
+                    </button>
+                    <button class="preset-btn" onclick="loadPreset('ieee30')">
+                        <h4>IEEE 30-Bus</h4>
+                        <p>Larger IEEE test system</p>
+                    </button>
+                    <button class="preset-btn" onclick="loadPreset('simple2')">
+                        <h4>Simple 2-Bus</h4>
+                        <p>Basic generator-load system</p>
+                    </button>
+                    <button class="preset-btn" onclick="loadPreset('radial')">
+                        <h4>Radial Feeder</h4>
+                        <p>Distribution feeder example</p>
+                    </button>
+                    <button class="preset-btn" onclick="loadPreset('ring')">
+                        <h4>Ring Network</h4>
+                        <p>Meshed network example</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal-overlay" id="help-modal">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>PowerGrid Pro Help</h3>
+                <button class="modal-close" onclick="closeModal('help-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h4 style="color: var(--accent-blue); margin-bottom: 10px;">Keyboard Shortcuts</h4>
+                <table class="results-table">
+                    <tr><td><strong>B</strong></td><td>Add Bus</td></tr>
+                    <tr><td><strong>G</strong></td><td>Add Generator</td></tr>
+                    <tr><td><strong>L</strong></td><td>Add Load</td></tr>
+                    <tr><td><strong>N</strong></td><td>Add Line (connect mode)</td></tr>
+                    <tr><td><strong>T</strong></td><td>Add Transformer</td></tr>
+                    <tr><td><strong>S</strong></td><td>Select tool</td></tr>
+                    <tr><td><strong>Delete</strong></td><td>Delete selected</td></tr>
+                    <tr><td><strong>Escape</strong></td><td>Cancel / Deselect</td></tr>
+                    <tr><td><strong>Ctrl+Z</strong></td><td>Undo</td></tr>
+                    <tr><td><strong>Enter</strong></td><td>Run Power Flow</td></tr>
+                </table>
+                <h4 style="color: var(--accent-blue); margin: 15px 0 10px;">Terminal Commands</h4>
+                <table class="results-table">
+                    <tr><td><strong>help</strong></td><td>Show this help</td></tr>
+                    <tr><td><strong>run</strong></td><td>Run power flow</td></tr>
+                    <tr><td><strong>clear</strong></td><td>Clear terminal</td></tr>
+                    <tr><td><strong>buses</strong></td><td>List all buses</td></tr>
+                    <tr><td><strong>branches</strong></td><td>List all branches</td></tr>
+                    <tr><td><strong>export</strong></td><td>Export system JSON</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="context-menu">
+        <div class="context-menu-item" onclick="editSelected()">Edit Properties</div>
+        <div class="context-menu-item" onclick="duplicateSelected()">Duplicate</div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item" onclick="deleteSelected()">Delete</div>
+    </div>
+
+    <!-- Hidden file input for import -->
+    <input type="file" id="file-input" accept=".json" style="display: none;" onchange="handleFileImport(event)">
+
     <script>
-        // Base64-encoded WebAssembly binary (compiled from Rust via WAT)
-        const wasmBase64 = "AGFzbQEAAAABGwVgAX8BfWACf30AYAV/fX19fQBgAX8AYAABfwMMCwAAAAABAQEBAgMEBQMBAAEGGQN9AEMAAAA/C30AQ28SgzwLfQBDAACgQAsHNwQGbWVtb3J5AgANaW5pdF9wYXJ0aWNsZQAIBnVwZGF0ZQAJEWdldF9wYXJ0aWNsZXNfcHRyAAoK+gILCgAgAEEQbCoCAAsNACAAQRBsQQRqKgIACw0AIABBEGxBCGoqAgALDQAgAEEQbEEMaioCAAsMACAAQRBsIAE4AgALDwAgAEEQbEEEaiABOAIACw8AIABBEGxBCGogATgCAAsPACAAQRBsQQxqIAE4AgALGgAgACABEAQgACACEAUgACADEAYgACAEEAcL5QECAn8NfUEAIQECQANAIAEgAE8NASABEAAhAyABEAEhBEMAAAAAIQxDAAAAACENQQAhAgJAA0AgAiAATw0BIAEgAkcEQCACEAAhBSACEAEhBiAFIAOTIQcgBiAEkyEIIAcgB5QgCCAIlJIjApIhCSAJkSEKIwAgCSAKlJUhCyAMIAcgC5SSIQwgDSAIIAuUkiENCyACQQFqIQIMAAsLIAEQAiAMIwGUkiEOIAEQAyANIwGUkiEPIAEgDhAGIAEgDxAHIAEgAyAOIwGUkhAEIAEgBCAPIwGUkhAFIAFBAWohAQwACwsLBABBAAs=";
-        
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        let wasm = null;
-        let memory = null;
-        let particleCount = 0;
-        let maxParticles = 200;
-        let paused = false;
-        let mouseX = 0, mouseY = 0;
-        let mouseDown = false;
-        let lastTime = performance.now();
-        let frameCount = 0;
-        let fps = 0;
-        let physicsTime = 0;
-        
-        // Initialize canvas size
-        function resizeCanvas() {
-            const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width * window.devicePixelRatio;
-            canvas.height = rect.height * window.devicePixelRatio;
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-        }
-        
-        // Load WASM module
-        async function loadWasm() {
-            const bytes = Uint8Array.from(atob(wasmBase64), c => c.charCodeAt(0));
-            const { instance } = await WebAssembly.instantiate(bytes);
-            wasm = instance.exports;
-            memory = new Float32Array(wasm.memory.buffer);
-        }
-        
-        // Initialize particles in a circle
-        function initParticles(count) {
-            const centerX = canvas.width / window.devicePixelRatio / 2;
-            const centerY = canvas.height / window.devicePixelRatio / 2;
-            const radius = Math.min(centerX, centerY) * 0.6;
-            
-            for (let i = 0; i < count; i++) {
-                const angle = (i / count) * Math.PI * 2 + Math.random() * 0.5;
-                const r = radius * (0.5 + Math.random() * 0.5);
-                const x = centerX + Math.cos(angle) * r;
-                const y = centerY + Math.sin(angle) * r;
-                
-                // Orbital velocity
-                const speed = 2 + Math.random() * 2;
-                const vx = -Math.sin(angle) * speed;
-                const vy = Math.cos(angle) * speed;
-                
-                wasm.init_particle(i, x, y, vx, vy);
-            }
-            particleCount = count;
-            updateStats();
-        }
-        
-        function addParticles(count) {
-            if (particleCount + count > maxParticles) {
-                count = maxParticles - particleCount;
-            }
-            
-            const centerX = canvas.width / window.devicePixelRatio / 2;
-            const centerY = canvas.height / window.devicePixelRatio / 2;
-            
-            for (let i = 0; i < count; i++) {
-                const idx = particleCount + i;
-                const angle = Math.random() * Math.PI * 2;
-                const r = 50 + Math.random() * 100;
-                const x = centerX + Math.cos(angle) * r;
-                const y = centerY + Math.sin(angle) * r;
-                const vx = (Math.random() - 0.5) * 4;
-                const vy = (Math.random() - 0.5) * 4;
-                wasm.init_particle(idx, x, y, vx, vy);
-            }
-            particleCount += count;
-            updateStats();
-        }
-        
-        function reset() {
-            initParticles(50);
-        }
-        
-        function togglePause() {
-            paused = !paused;
-        }
-        
-        function explode() {
-            const centerX = canvas.width / window.devicePixelRatio / 2;
-            const centerY = canvas.height / window.devicePixelRatio / 2;
-            
-            for (let i = 0; i < particleCount; i++) {
-                const offset = i * 4;
-                const dx = memory[offset] - centerX;
-                const dy = memory[offset + 1] - centerY;
-                const dist = Math.sqrt(dx*dx + dy*dy) || 1;
-                memory[offset + 2] += (dx / dist) * 10;
-                memory[offset + 3] += (dy / dist) * 10;
+    // ============================================
+    // POWERGRID PRO - POWER SYSTEMS SIMULATOR
+    // ============================================
+
+    // ==================== STATE ====================
+    const state = {
+        buses: [],
+        generators: [],
+        loads: [],
+        lines: [],
+        transformers: [],
+        shunts: [],
+        selectedId: null,
+        selectedType: null,
+        currentTool: 'select',
+        connectFrom: null,
+        isDragging: false,
+        dragOffset: { x: 0, y: 0 },
+        pan: { x: 0, y: 0 },
+        zoom: 1,
+        gridSize: 20,
+        nextId: { bus: 1, gen: 1, load: 1, line: 1, xfmr: 1, shunt: 1 },
+        results: null,
+        baseMVA: 100
+    };
+
+    // ==================== TERMINAL ====================
+    function log(msg, type = 'info') {
+        const terminal = document.getElementById('terminal-content');
+        const line = document.createElement('div');
+        line.className = 'terminal-line ' + type;
+        line.textContent = msg;
+        terminal.appendChild(line);
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function clearTerminal() {
+        document.getElementById('terminal-content').innerHTML = '';
+        log('Terminal cleared', 'muted');
+    }
+
+    // ==================== CANVAS SETUP ====================
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width * window.devicePixelRatio;
+        canvas.height = rect.height * window.devicePixelRatio;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        render();
+    }
+
+    function getCanvasSize() {
+        return {
+            w: canvas.width / window.devicePixelRatio,
+            h: canvas.height / window.devicePixelRatio
+        };
+    }
+
+    // ==================== RENDERING ====================
+    function render() {
+        const { w, h } = getCanvasSize();
+
+        // Clear
+        ctx.fillStyle = '#0a0a15';
+        ctx.fillRect(0, 0, w, h);
+
+        // Grid
+        ctx.save();
+        ctx.translate(state.pan.x, state.pan.y);
+        ctx.scale(state.zoom, state.zoom);
+
+        drawGrid(w, h);
+        drawLines();
+        drawTransformers();
+        drawBuses();
+        drawGenerators();
+        drawLoads();
+        drawShunts();
+
+        // Connection preview
+        if (state.currentTool === 'connect' && state.connectFrom) {
+            const fromBus = state.buses.find(b => b.id === state.connectFrom);
+            if (fromBus) {
+                ctx.strokeStyle = 'rgba(72, 219, 251, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(fromBus.x, fromBus.y);
+                const mouse = screenToWorld(state.mouseX, state.mouseY);
+                ctx.lineTo(mouse.x, mouse.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
             }
         }
-        
-        function updateStats() {
-            document.getElementById('count').textContent = particleCount;
-            document.getElementById('fps').textContent = fps;
-            document.getElementById('physics-time').textContent = physicsTime.toFixed(2);
+
+        ctx.restore();
+
+        // Empty state message
+        if (state.buses.length === 0) {
+            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+            ctx.font = '14px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText('Click Bus tool then click here to add buses', w/2, h/2);
+            ctx.fillText('Or load a preset system from the header', w/2, h/2 + 25);
         }
-        
-        // Main render loop
-        function render() {
-            const w = canvas.width / window.devicePixelRatio;
-            const h = canvas.height / window.devicePixelRatio;
-            
-            // Clear with fade effect for trails
-            ctx.fillStyle = 'rgba(10, 10, 21, 0.3)';
-            ctx.fillRect(0, 0, w, h);
-            
-            if (!paused && particleCount > 0) {
-                // Mouse attraction
-                if (mouseDown) {
-                    for (let i = 0; i < particleCount; i++) {
-                        const offset = i * 4;
-                        const dx = mouseX - memory[offset];
-                        const dy = mouseY - memory[offset + 1];
-                        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
-                        memory[offset + 2] += (dx / dist) * 0.3;
-                        memory[offset + 3] += (dy / dist) * 0.3;
+
+        updateStatusBar();
+    }
+
+    function drawGrid(w, h) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+        ctx.lineWidth = 1 / state.zoom;
+
+        const startX = Math.floor(-state.pan.x / state.zoom / state.gridSize) * state.gridSize;
+        const startY = Math.floor(-state.pan.y / state.zoom / state.gridSize) * state.gridSize;
+        const endX = startX + w / state.zoom + state.gridSize * 2;
+        const endY = startY + h / state.zoom + state.gridSize * 2;
+
+        for (let x = startX; x <= endX; x += state.gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(x, startY);
+            ctx.lineTo(x, endY);
+            ctx.stroke();
+        }
+        for (let y = startY; y <= endY; y += state.gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(startX, y);
+            ctx.lineTo(endX, y);
+            ctx.stroke();
+        }
+    }
+
+    function drawBuses() {
+        state.buses.forEach(bus => {
+            const isSelected = state.selectedType === 'bus' && state.selectedId === bus.id;
+
+            // Bus bar
+            ctx.strokeStyle = isSelected ? '#48dbfb' : getBusColor(bus);
+            ctx.lineWidth = isSelected ? 4 : 3;
+            ctx.lineCap = 'round';
+
+            ctx.beginPath();
+            ctx.moveTo(bus.x - 30, bus.y);
+            ctx.lineTo(bus.x + 30, bus.y);
+            ctx.stroke();
+
+            // Selection highlight
+            if (isSelected) {
+                ctx.strokeStyle = 'rgba(72, 219, 251, 0.3)';
+                ctx.lineWidth = 10;
+                ctx.beginPath();
+                ctx.moveTo(bus.x - 35, bus.y);
+                ctx.lineTo(bus.x + 35, bus.y);
+                ctx.stroke();
+            }
+
+            // Label
+            ctx.fillStyle = '#e0e0e0';
+            ctx.font = '11px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText(bus.name, bus.x, bus.y - 15);
+
+            // Voltage display (after power flow)
+            if (bus.vm !== undefined) {
+                const vmClass = bus.vm < 0.95 ? '#ff6b6b' : bus.vm > 1.05 ? '#feca57' : '#26de81';
+                ctx.fillStyle = vmClass;
+                ctx.font = '10px Consolas';
+                ctx.fillText(`${bus.vm.toFixed(3)} pu`, bus.x, bus.y + 20);
+                ctx.fillText(`${(bus.va * 180 / Math.PI).toFixed(1)}°`, bus.x, bus.y + 32);
+            }
+        });
+    }
+
+    function getBusColor(bus) {
+        if (bus.vm !== undefined) {
+            if (bus.vm < 0.95) return '#ff6b6b';
+            if (bus.vm > 1.05) return '#feca57';
+            return '#26de81';
+        }
+        if (bus.type === 'slack') return '#a55eea';
+        if (bus.type === 'pv') return '#26de81';
+        return '#48dbfb';
+    }
+
+    function drawGenerators() {
+        state.generators.forEach(gen => {
+            const bus = state.buses.find(b => b.id === gen.busId);
+            if (!bus) return;
+
+            const isSelected = state.selectedType === 'generator' && state.selectedId === gen.id;
+            const x = bus.x + gen.offset;
+            const y = bus.y - 40;
+
+            // Connection line
+            ctx.strokeStyle = isSelected ? '#48dbfb' : '#26de81';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x, bus.y);
+            ctx.lineTo(x, y + 15);
+            ctx.stroke();
+
+            // Generator circle
+            ctx.beginPath();
+            ctx.arc(x, y, 15, 0, Math.PI * 2);
+            ctx.fillStyle = isSelected ? 'rgba(72, 219, 251, 0.2)' : 'rgba(38, 222, 129, 0.2)';
+            ctx.fill();
+            ctx.strokeStyle = isSelected ? '#48dbfb' : '#26de81';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Sine wave inside
+            ctx.beginPath();
+            ctx.moveTo(x - 8, y);
+            ctx.quadraticCurveTo(x - 4, y - 6, x, y);
+            ctx.quadraticCurveTo(x + 4, y + 6, x + 8, y);
+            ctx.stroke();
+
+            // Label
+            ctx.fillStyle = '#e0e0e0';
+            ctx.font = '10px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText(gen.name, x, y - 22);
+            ctx.font = '9px Consolas';
+            ctx.fillStyle = '#26de81';
+            ctx.fillText(`${gen.pg.toFixed(0)} MW`, x, y + 30);
+        });
+    }
+
+    function drawLoads() {
+        state.loads.forEach(load => {
+            const bus = state.buses.find(b => b.id === load.busId);
+            if (!bus) return;
+
+            const isSelected = state.selectedType === 'load' && state.selectedId === load.id;
+            const x = bus.x + load.offset;
+            const y = bus.y + 40;
+
+            // Connection line
+            ctx.strokeStyle = isSelected ? '#48dbfb' : '#ff6b6b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x, bus.y);
+            ctx.lineTo(x, y - 10);
+            ctx.stroke();
+
+            // Load triangle
+            ctx.beginPath();
+            ctx.moveTo(x - 12, y - 10);
+            ctx.lineTo(x + 12, y - 10);
+            ctx.lineTo(x, y + 10);
+            ctx.closePath();
+            ctx.fillStyle = isSelected ? 'rgba(72, 219, 251, 0.2)' : 'rgba(255, 107, 107, 0.2)';
+            ctx.fill();
+            ctx.strokeStyle = isSelected ? '#48dbfb' : '#ff6b6b';
+            ctx.stroke();
+
+            // Label
+            ctx.fillStyle = '#e0e0e0';
+            ctx.font = '10px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText(load.name, x, y + 25);
+            ctx.font = '9px Consolas';
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillText(`${load.pl.toFixed(0)} MW`, x, y + 37);
+        });
+    }
+
+    function drawLines() {
+        state.lines.forEach(line => {
+            const fromBus = state.buses.find(b => b.id === line.fromBus);
+            const toBus = state.buses.find(b => b.id === line.toBus);
+            if (!fromBus || !toBus) return;
+
+            const isSelected = state.selectedType === 'line' && state.selectedId === line.id;
+
+            // Line
+            ctx.strokeStyle = isSelected ? '#48dbfb' : (line.status ? '#feca57' : '#555');
+            ctx.lineWidth = isSelected ? 3 : 2;
+            ctx.beginPath();
+            ctx.moveTo(fromBus.x, fromBus.y);
+            ctx.lineTo(toBus.x, toBus.y);
+            ctx.stroke();
+
+            // Midpoint label
+            const mx = (fromBus.x + toBus.x) / 2;
+            const my = (fromBus.y + toBus.y) / 2;
+
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(mx - 25, my - 8, 50, 16);
+            ctx.fillStyle = '#e0e0e0';
+            ctx.font = '9px Consolas';
+            ctx.textAlign = 'center';
+            ctx.fillText(line.name, mx, my + 3);
+
+            // Power flow arrows if results exist
+            if (line.pFrom !== undefined) {
+                const pFlow = line.pFrom;
+                const angle = Math.atan2(toBus.y - fromBus.y, toBus.x - fromBus.x);
+                const arrowX = mx + (pFlow > 0 ? 30 : -30) * Math.cos(angle);
+                const arrowY = my + (pFlow > 0 ? 30 : -30) * Math.sin(angle);
+
+                ctx.fillStyle = '#feca57';
+                ctx.font = '9px Consolas';
+                ctx.fillText(`${Math.abs(pFlow).toFixed(1)} MW`, mx, my + 18);
+            }
+        });
+    }
+
+    function drawTransformers() {
+        state.transformers.forEach(xfmr => {
+            const fromBus = state.buses.find(b => b.id === xfmr.fromBus);
+            const toBus = state.buses.find(b => b.id === xfmr.toBus);
+            if (!fromBus || !toBus) return;
+
+            const isSelected = state.selectedType === 'transformer' && state.selectedId === xfmr.id;
+            const mx = (fromBus.x + toBus.x) / 2;
+            const my = (fromBus.y + toBus.y) / 2;
+
+            // Lines to transformer
+            ctx.strokeStyle = isSelected ? '#48dbfb' : '#a55eea';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(fromBus.x, fromBus.y);
+            ctx.lineTo(mx - 10, my);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(mx + 10, my);
+            ctx.lineTo(toBus.x, toBus.y);
+            ctx.stroke();
+
+            // Two circles (transformer symbol)
+            ctx.beginPath();
+            ctx.arc(mx - 8, my, 10, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(165, 94, 234, 0.2)';
+            ctx.fill();
+            ctx.strokeStyle = isSelected ? '#48dbfb' : '#a55eea';
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(mx + 8, my, 10, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(165, 94, 234, 0.2)';
+            ctx.fill();
+            ctx.stroke();
+
+            // Label
+            ctx.fillStyle = '#e0e0e0';
+            ctx.font = '9px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText(xfmr.name, mx, my - 18);
+        });
+    }
+
+    function drawShunts() {
+        state.shunts.forEach(shunt => {
+            const bus = state.buses.find(b => b.id === shunt.busId);
+            if (!bus) return;
+
+            const isSelected = state.selectedType === 'shunt' && state.selectedId === shunt.id;
+            const x = bus.x + shunt.offset;
+            const y = bus.y + 50;
+
+            // Connection line
+            ctx.strokeStyle = isSelected ? '#48dbfb' : '#feca57';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x, bus.y);
+            ctx.lineTo(x, y - 10);
+            ctx.stroke();
+
+            // Capacitor symbol
+            ctx.beginPath();
+            ctx.moveTo(x - 10, y - 10);
+            ctx.lineTo(x + 10, y - 10);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x - 10, y - 5);
+            ctx.lineTo(x + 10, y - 5);
+            ctx.stroke();
+
+            // Ground
+            ctx.beginPath();
+            ctx.moveTo(x, y - 5);
+            ctx.lineTo(x, y + 5);
+            ctx.stroke();
+            for (let i = 0; i < 3; i++) {
+                const gw = 10 - i * 3;
+                ctx.beginPath();
+                ctx.moveTo(x - gw, y + 5 + i * 4);
+                ctx.lineTo(x + gw, y + 5 + i * 4);
+                ctx.stroke();
+            }
+
+            // Label
+            ctx.fillStyle = '#e0e0e0';
+            ctx.font = '10px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText(shunt.name, x, y + 25);
+            ctx.font = '9px Consolas';
+            ctx.fillStyle = '#feca57';
+            ctx.fillText(`${shunt.b.toFixed(0)} MVAr`, x, y + 37);
+        });
+    }
+
+    // ==================== COORDINATE TRANSFORMS ====================
+    function screenToWorld(sx, sy) {
+        return {
+            x: (sx - state.pan.x) / state.zoom,
+            y: (sy - state.pan.y) / state.zoom
+        };
+    }
+
+    function worldToScreen(wx, wy) {
+        return {
+            x: wx * state.zoom + state.pan.x,
+            y: wy * state.zoom + state.pan.y
+        };
+    }
+
+    function snapToGrid(val) {
+        return Math.round(val / state.gridSize) * state.gridSize;
+    }
+
+    // ==================== COMPONENT CREATION ====================
+    function createBus(x, y) {
+        const bus = {
+            id: state.nextId.bus++,
+            name: `Bus ${state.buses.length + 1}`,
+            x: snapToGrid(x),
+            y: snapToGrid(y),
+            type: state.buses.length === 0 ? 'slack' : 'pq',
+            vnom: 138,
+            vm: undefined,
+            va: undefined
+        };
+        state.buses.push(bus);
+        log(`Created ${bus.name} at (${bus.x}, ${bus.y})`, 'success');
+        updateStatusBar();
+        render();
+        return bus;
+    }
+
+    function createGenerator(busId) {
+        const bus = state.buses.find(b => b.id === busId);
+        if (!bus) return null;
+
+        // Calculate offset to avoid overlap
+        const existingAtBus = state.generators.filter(g => g.busId === busId).length +
+                              state.loads.filter(l => l.busId === busId).length;
+        const offset = (existingAtBus - 0.5) * 40;
+
+        const gen = {
+            id: state.nextId.gen++,
+            name: `Gen ${state.generators.length + 1}`,
+            busId: busId,
+            offset: offset,
+            pg: 100,
+            qg: 0,
+            qmin: -100,
+            qmax: 100,
+            vset: 1.0,
+            pmax: 200,
+            pmin: 0,
+            status: true,
+            cost: [0, 20, 0.01]  // a + b*P + c*P^2
+        };
+        state.generators.push(gen);
+
+        // Change bus to PV if not slack
+        if (bus.type === 'pq') {
+            bus.type = 'pv';
+        }
+
+        log(`Created ${gen.name} on ${bus.name}`, 'success');
+        updateStatusBar();
+        render();
+        return gen;
+    }
+
+    function createLoad(busId) {
+        const bus = state.buses.find(b => b.id === busId);
+        if (!bus) return null;
+
+        const existingAtBus = state.generators.filter(g => g.busId === busId).length +
+                              state.loads.filter(l => l.busId === busId).length;
+        const offset = (existingAtBus - 0.5) * 40;
+
+        const load = {
+            id: state.nextId.load++,
+            name: `Load ${state.loads.length + 1}`,
+            busId: busId,
+            offset: offset,
+            pl: 50,
+            ql: 20,
+            status: true
+        };
+        state.loads.push(load);
+        log(`Created ${load.name} on ${bus.name}`, 'success');
+        updateStatusBar();
+        render();
+        return load;
+    }
+
+    function createLine(fromBusId, toBusId) {
+        const line = {
+            id: state.nextId.line++,
+            name: `L${state.lines.length + 1}`,
+            fromBus: fromBusId,
+            toBus: toBusId,
+            r: 0.01,
+            x: 0.1,
+            b: 0.02,
+            rating: 100,
+            status: true
+        };
+        state.lines.push(line);
+
+        const fb = state.buses.find(b => b.id === fromBusId);
+        const tb = state.buses.find(b => b.id === toBusId);
+        log(`Created ${line.name}: ${fb.name} -> ${tb.name}`, 'success');
+        updateStatusBar();
+        render();
+        return line;
+    }
+
+    function createTransformer(fromBusId, toBusId) {
+        const xfmr = {
+            id: state.nextId.xfmr++,
+            name: `T${state.transformers.length + 1}`,
+            fromBus: fromBusId,
+            toBus: toBusId,
+            r: 0.005,
+            x: 0.05,
+            tap: 1.0,
+            shift: 0,
+            rating: 100,
+            status: true
+        };
+        state.transformers.push(xfmr);
+
+        const fb = state.buses.find(b => b.id === fromBusId);
+        const tb = state.buses.find(b => b.id === toBusId);
+        log(`Created ${xfmr.name}: ${fb.name} -> ${tb.name}`, 'success');
+        updateStatusBar();
+        render();
+        return xfmr;
+    }
+
+    function createShunt(busId) {
+        const bus = state.buses.find(b => b.id === busId);
+        if (!bus) return null;
+
+        const existingShunts = state.shunts.filter(s => s.busId === busId).length;
+        const offset = existingShunts * 40 - 20;
+
+        const shunt = {
+            id: state.nextId.shunt++,
+            name: `C${state.shunts.length + 1}`,
+            busId: busId,
+            offset: offset,
+            b: 25,
+            status: true
+        };
+        state.shunts.push(shunt);
+        log(`Created ${shunt.name} on ${bus.name}`, 'success');
+        updateStatusBar();
+        render();
+        return shunt;
+    }
+
+    // ==================== HIT TESTING ====================
+    function hitTest(wx, wy) {
+        // Test buses
+        for (const bus of state.buses) {
+            if (Math.abs(wx - bus.x) < 35 && Math.abs(wy - bus.y) < 10) {
+                return { type: 'bus', id: bus.id };
+            }
+        }
+
+        // Test generators
+        for (const gen of state.generators) {
+            const bus = state.buses.find(b => b.id === gen.busId);
+            if (bus) {
+                const gx = bus.x + gen.offset;
+                const gy = bus.y - 40;
+                if (Math.hypot(wx - gx, wy - gy) < 20) {
+                    return { type: 'generator', id: gen.id };
+                }
+            }
+        }
+
+        // Test loads
+        for (const load of state.loads) {
+            const bus = state.buses.find(b => b.id === load.busId);
+            if (bus) {
+                const lx = bus.x + load.offset;
+                const ly = bus.y + 40;
+                if (Math.abs(wx - lx) < 15 && Math.abs(wy - ly) < 15) {
+                    return { type: 'load', id: load.id };
+                }
+            }
+        }
+
+        // Test lines
+        for (const line of state.lines) {
+            const fromBus = state.buses.find(b => b.id === line.fromBus);
+            const toBus = state.buses.find(b => b.id === line.toBus);
+            if (fromBus && toBus) {
+                const dist = pointToLineDistance(wx, wy, fromBus.x, fromBus.y, toBus.x, toBus.y);
+                if (dist < 10) {
+                    return { type: 'line', id: line.id };
+                }
+            }
+        }
+
+        // Test transformers
+        for (const xfmr of state.transformers) {
+            const fromBus = state.buses.find(b => b.id === xfmr.fromBus);
+            const toBus = state.buses.find(b => b.id === xfmr.toBus);
+            if (fromBus && toBus) {
+                const mx = (fromBus.x + toBus.x) / 2;
+                const my = (fromBus.y + toBus.y) / 2;
+                if (Math.hypot(wx - mx, wy - my) < 20) {
+                    return { type: 'transformer', id: xfmr.id };
+                }
+            }
+        }
+
+        // Test shunts
+        for (const shunt of state.shunts) {
+            const bus = state.buses.find(b => b.id === shunt.busId);
+            if (bus) {
+                const sx = bus.x + shunt.offset;
+                const sy = bus.y + 50;
+                if (Math.abs(wx - sx) < 15 && Math.abs(wy - sy) < 20) {
+                    return { type: 'shunt', id: shunt.id };
+                }
+            }
+        }
+
+        return null;
+    }
+
+    function pointToLineDistance(px, py, x1, y1, x2, y2) {
+        const A = px - x1;
+        const B = py - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+        const dot = A * C + B * D;
+        const lenSq = C * C + D * D;
+        let param = lenSq !== 0 ? dot / lenSq : -1;
+
+        let xx, yy;
+        if (param < 0) { xx = x1; yy = y1; }
+        else if (param > 1) { xx = x2; yy = y2; }
+        else { xx = x1 + param * C; yy = y1 + param * D; }
+
+        return Math.hypot(px - xx, py - yy);
+    }
+
+    // ==================== EVENT HANDLERS ====================
+    state.mouseX = 0;
+    state.mouseY = 0;
+
+    canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const sx = e.clientX - rect.left;
+        const sy = e.clientY - rect.top;
+        const world = screenToWorld(sx, sy);
+        state.mouseX = sx;
+        state.mouseY = sy;
+
+        if (e.button === 2) return; // Right click handled elsewhere
+
+        const hit = hitTest(world.x, world.y);
+
+        switch (state.currentTool) {
+            case 'select':
+                if (hit) {
+                    state.selectedType = hit.type;
+                    state.selectedId = hit.id;
+                    state.isDragging = true;
+                    if (hit.type === 'bus') {
+                        const bus = state.buses.find(b => b.id === hit.id);
+                        state.dragOffset = { x: world.x - bus.x, y: world.y - bus.y };
+                    }
+                    showPropertyPanel(hit.type, hit.id);
+                } else {
+                    state.selectedType = null;
+                    state.selectedId = null;
+                    showPropertyPanel(null, null);
+                }
+                break;
+
+            case 'bus':
+                createBus(world.x, world.y);
+                break;
+
+            case 'generator':
+                if (hit && hit.type === 'bus') {
+                    createGenerator(hit.id);
+                } else {
+                    log('Click on a bus to add a generator', 'warning');
+                }
+                break;
+
+            case 'load':
+                if (hit && hit.type === 'bus') {
+                    createLoad(hit.id);
+                } else {
+                    log('Click on a bus to add a load', 'warning');
+                }
+                break;
+
+            case 'line':
+            case 'connect':
+                if (hit && hit.type === 'bus') {
+                    if (!state.connectFrom) {
+                        state.connectFrom = hit.id;
+                        log('Select second bus to complete connection', 'info');
+                    } else if (state.connectFrom !== hit.id) {
+                        createLine(state.connectFrom, hit.id);
+                        state.connectFrom = null;
+                    }
+                } else if (!hit) {
+                    state.connectFrom = null;
+                }
+                break;
+
+            case 'transformer':
+                if (hit && hit.type === 'bus') {
+                    if (!state.connectFrom) {
+                        state.connectFrom = hit.id;
+                        log('Select second bus for transformer', 'info');
+                    } else if (state.connectFrom !== hit.id) {
+                        createTransformer(state.connectFrom, hit.id);
+                        state.connectFrom = null;
                     }
                 }
-                
-                // Run physics in WASM
-                const startPhysics = performance.now();
-                wasm.update(particleCount);
-                physicsTime = performance.now() - startPhysics;
-            }
-            
-            // Draw particles
-            for (let i = 0; i < particleCount; i++) {
-                const offset = i * 4;
-                const x = memory[offset];
-                const y = memory[offset + 1];
-                const vx = memory[offset + 2];
-                const vy = memory[offset + 3];
-                const speed = Math.sqrt(vx*vx + vy*vy);
-                
-                // Color based on velocity
-                const hue = 200 + speed * 10;
-                const size = 2 + speed * 0.3;
-                
-                ctx.beginPath();
-                ctx.arc(x, y, size, 0, Math.PI * 2);
-                ctx.fillStyle = `hsl(${hue}, 80%, 60%)`;
-                ctx.fill();
-                
-                // Glow effect
-                ctx.beginPath();
-                ctx.arc(x, y, size * 2, 0, Math.PI * 2);
-                ctx.fillStyle = `hsla(${hue}, 80%, 60%, 0.2)`;
-                ctx.fill();
-            }
-            
-            // FPS calculation
-            frameCount++;
-            const now = performance.now();
-            if (now - lastTime >= 1000) {
-                fps = frameCount;
-                frameCount = 0;
-                lastTime = now;
-                updateStats();
-            }
-            
-            requestAnimationFrame(render);
+                break;
+
+            case 'shunt':
+                if (hit && hit.type === 'bus') {
+                    createShunt(hit.id);
+                } else {
+                    log('Click on a bus to add a shunt', 'warning');
+                }
+                break;
+
+            case 'delete':
+                if (hit) {
+                    deleteComponent(hit.type, hit.id);
+                }
+                break;
+
+            case 'pan':
+                state.isDragging = true;
+                state.dragOffset = { x: sx - state.pan.x, y: sy - state.pan.y };
+                break;
         }
-        
-        // Event listeners
-        canvas.addEventListener('mousedown', (e) => {
-            mouseDown = true;
-            const rect = canvas.getBoundingClientRect();
-            mouseX = e.clientX - rect.left;
-            mouseY = e.clientY - rect.top;
-        });
-        
-        canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            mouseX = e.clientX - rect.left;
-            mouseY = e.clientY - rect.top;
-        });
-        
-        canvas.addEventListener('mouseup', () => mouseDown = false);
-        canvas.addEventListener('mouseleave', () => mouseDown = false);
-        
-        window.addEventListener('resize', resizeCanvas);
-        
-        // Initialize
-        async function init() {
-            resizeCanvas();
-            await loadWasm();
-            initParticles(50);
+
+        render();
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const sx = e.clientX - rect.left;
+        const sy = e.clientY - rect.top;
+        state.mouseX = sx;
+        state.mouseY = sy;
+
+        const world = screenToWorld(sx, sy);
+        document.getElementById('mouse-info').textContent = `X: ${Math.round(world.x)}, Y: ${Math.round(world.y)}`;
+
+        if (state.isDragging) {
+            if (state.currentTool === 'pan') {
+                state.pan.x = sx - state.dragOffset.x;
+                state.pan.y = sy - state.dragOffset.y;
+            } else if (state.currentTool === 'select' && state.selectedType === 'bus') {
+                const bus = state.buses.find(b => b.id === state.selectedId);
+                if (bus) {
+                    bus.x = snapToGrid(world.x - state.dragOffset.x);
+                    bus.y = snapToGrid(world.y - state.dragOffset.y);
+                }
+            }
+            render();
+        } else if (state.currentTool === 'connect' || state.currentTool === 'line' || state.currentTool === 'transformer') {
             render();
         }
-        
-        init();
+    });
+
+    canvas.addEventListener('mouseup', () => {
+        state.isDragging = false;
+    });
+
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const sx = e.clientX - rect.left;
+        const sy = e.clientY - rect.top;
+
+        const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+        const newZoom = Math.max(0.25, Math.min(4, state.zoom * zoomFactor));
+
+        // Zoom towards mouse position
+        state.pan.x = sx - (sx - state.pan.x) * (newZoom / state.zoom);
+        state.pan.y = sy - (sy - state.pan.y) * (newZoom / state.zoom);
+        state.zoom = newZoom;
+
+        document.getElementById('zoom-info').textContent = `Zoom: ${Math.round(state.zoom * 100)}%`;
+        render();
+    });
+
+    // Context menu
+    canvas.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const sx = e.clientX - rect.left;
+        const sy = e.clientY - rect.top;
+        const world = screenToWorld(sx, sy);
+
+        const hit = hitTest(world.x, world.y);
+        if (hit) {
+            state.selectedType = hit.type;
+            state.selectedId = hit.id;
+            showPropertyPanel(hit.type, hit.id);
+
+            const menu = document.getElementById('context-menu');
+            menu.style.left = e.clientX + 'px';
+            menu.style.top = e.clientY + 'px';
+            menu.classList.add('active');
+        }
+        render();
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.context-menu')) {
+            document.getElementById('context-menu').classList.remove('active');
+        }
+    });
+
+    // ==================== KEYBOARD SHORTCUTS ====================
+    document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT') return;
+
+        switch (e.key.toLowerCase()) {
+            case 'b': setTool('bus'); break;
+            case 'g': setTool('generator'); break;
+            case 'l': setTool('load'); break;
+            case 'n': setTool('line'); break;
+            case 't': setTool('transformer'); break;
+            case 'h': setTool('shunt'); break;
+            case 's': setTool('select'); break;
+            case 'c': setTool('connect'); break;
+            case 'd': setTool('delete'); break;
+            case 'p': setTool('pan'); break;
+            case 'delete':
+            case 'backspace':
+                if (state.selectedType && state.selectedId) {
+                    deleteComponent(state.selectedType, state.selectedId);
+                }
+                break;
+            case 'escape':
+                state.selectedType = null;
+                state.selectedId = null;
+                state.connectFrom = null;
+                showPropertyPanel(null, null);
+                render();
+                break;
+            case 'enter':
+                runPowerFlow();
+                break;
+        }
+    });
+
+    function setTool(tool) {
+        state.currentTool = tool;
+        state.connectFrom = null;
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tool === tool);
+        });
+        canvas.style.cursor = tool === 'pan' ? 'grab' : 'crosshair';
+    }
+
+    // Tool button clicks
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.addEventListener('click', () => setTool(btn.dataset.tool));
+    });
+
+    // ==================== PROPERTY PANEL ====================
+    function showPropertyPanel(type, id) {
+        const content = document.getElementById('property-content');
+
+        if (!type || !id) {
+            content.innerHTML = `
+                <div class="no-selection">
+                    <p>Select a component to view and edit its properties</p>
+                    <br>
+                    <p style="font-size: 0.75rem;">Tip: Use the toolbar to add buses, generators, loads, and lines</p>
+                </div>
+            `;
+            return;
+        }
+
+        let component, html;
+
+        switch (type) {
+            case 'bus':
+                component = state.buses.find(b => b.id === id);
+                html = `
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" id="prop-name" value="${component.name}" onchange="updateProperty('bus', ${id}, 'name', this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label>Type</label>
+                        <select id="prop-type" onchange="updateProperty('bus', ${id}, 'type', this.value)">
+                            <option value="slack" ${component.type === 'slack' ? 'selected' : ''}>Slack (Reference)</option>
+                            <option value="pv" ${component.type === 'pv' ? 'selected' : ''}>PV (Generator)</option>
+                            <option value="pq" ${component.type === 'pq' ? 'selected' : ''}>PQ (Load)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nominal Voltage (kV)</label>
+                        <input type="number" id="prop-vnom" value="${component.vnom}" onchange="updateProperty('bus', ${id}, 'vnom', parseFloat(this.value))">
+                    </div>
+                    ${component.vm !== undefined ? `
+                    <div class="form-group">
+                        <label>Results</label>
+                        <div style="font-family: Consolas; font-size: 0.85rem; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 4px;">
+                            <div>V = ${component.vm.toFixed(4)} pu</div>
+                            <div>θ = ${(component.va * 180 / Math.PI).toFixed(2)}°</div>
+                        </div>
+                    </div>
+                    ` : ''}
+                `;
+                break;
+
+            case 'generator':
+                component = state.generators.find(g => g.id === id);
+                html = `
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" value="${component.name}" onchange="updateProperty('generator', ${id}, 'name', this.value)">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>P Gen (MW)</label>
+                            <input type="number" value="${component.pg}" onchange="updateProperty('generator', ${id}, 'pg', parseFloat(this.value))">
+                        </div>
+                        <div class="form-group">
+                            <label>V Setpoint (pu)</label>
+                            <input type="number" step="0.01" value="${component.vset}" onchange="updateProperty('generator', ${id}, 'vset', parseFloat(this.value))">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Q Min (MVAr)</label>
+                            <input type="number" value="${component.qmin}" onchange="updateProperty('generator', ${id}, 'qmin', parseFloat(this.value))">
+                        </div>
+                        <div class="form-group">
+                            <label>Q Max (MVAr)</label>
+                            <input type="number" value="${component.qmax}" onchange="updateProperty('generator', ${id}, 'qmax', parseFloat(this.value))">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>P Min (MW)</label>
+                            <input type="number" value="${component.pmin}" onchange="updateProperty('generator', ${id}, 'pmin', parseFloat(this.value))">
+                        </div>
+                        <div class="form-group">
+                            <label>P Max (MW)</label>
+                            <input type="number" value="${component.pmax}" onchange="updateProperty('generator', ${id}, 'pmax', parseFloat(this.value))">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select onchange="updateProperty('generator', ${id}, 'status', this.value === 'true')">
+                            <option value="true" ${component.status ? 'selected' : ''}>Online</option>
+                            <option value="false" ${!component.status ? 'selected' : ''}>Offline</option>
+                        </select>
+                    </div>
+                `;
+                break;
+
+            case 'load':
+                component = state.loads.find(l => l.id === id);
+                html = `
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" value="${component.name}" onchange="updateProperty('load', ${id}, 'name', this.value)">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>P Load (MW)</label>
+                            <input type="number" value="${component.pl}" onchange="updateProperty('load', ${id}, 'pl', parseFloat(this.value))">
+                        </div>
+                        <div class="form-group">
+                            <label>Q Load (MVAr)</label>
+                            <input type="number" value="${component.ql}" onchange="updateProperty('load', ${id}, 'ql', parseFloat(this.value))">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select onchange="updateProperty('load', ${id}, 'status', this.value === 'true')">
+                            <option value="true" ${component.status ? 'selected' : ''}>Connected</option>
+                            <option value="false" ${!component.status ? 'selected' : ''}>Disconnected</option>
+                        </select>
+                    </div>
+                `;
+                break;
+
+            case 'line':
+                component = state.lines.find(l => l.id === id);
+                const fromBus = state.buses.find(b => b.id === component.fromBus);
+                const toBus = state.buses.find(b => b.id === component.toBus);
+                html = `
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" value="${component.name}" onchange="updateProperty('line', ${id}, 'name', this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label>Connection</label>
+                        <div style="font-size: 0.85rem; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px;">
+                            ${fromBus?.name || 'Unknown'} → ${toBus?.name || 'Unknown'}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>R (pu)</label>
+                            <input type="number" step="0.001" value="${component.r}" onchange="updateProperty('line', ${id}, 'r', parseFloat(this.value))">
+                        </div>
+                        <div class="form-group">
+                            <label>X (pu)</label>
+                            <input type="number" step="0.001" value="${component.x}" onchange="updateProperty('line', ${id}, 'x', parseFloat(this.value))">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>B (pu)</label>
+                            <input type="number" step="0.001" value="${component.b}" onchange="updateProperty('line', ${id}, 'b', parseFloat(this.value))">
+                        </div>
+                        <div class="form-group">
+                            <label>Rating (MVA)</label>
+                            <input type="number" value="${component.rating}" onchange="updateProperty('line', ${id}, 'rating', parseFloat(this.value))">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select onchange="updateProperty('line', ${id}, 'status', this.value === 'true')">
+                            <option value="true" ${component.status ? 'selected' : ''}>In Service</option>
+                            <option value="false" ${!component.status ? 'selected' : ''}>Out of Service</option>
+                        </select>
+                    </div>
+                    ${component.pFrom !== undefined ? `
+                    <div class="form-group">
+                        <label>Power Flow Results</label>
+                        <div style="font-family: Consolas; font-size: 0.85rem; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 4px;">
+                            <div>From: ${component.pFrom.toFixed(2)} MW, ${component.qFrom.toFixed(2)} MVAr</div>
+                            <div>To: ${component.pTo.toFixed(2)} MW, ${component.qTo.toFixed(2)} MVAr</div>
+                            <div>Losses: ${component.pLoss.toFixed(2)} MW</div>
+                        </div>
+                    </div>
+                    ` : ''}
+                `;
+                break;
+
+            case 'transformer':
+                component = state.transformers.find(t => t.id === id);
+                html = `
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" value="${component.name}" onchange="updateProperty('transformer', ${id}, 'name', this.value)">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>R (pu)</label>
+                            <input type="number" step="0.001" value="${component.r}" onchange="updateProperty('transformer', ${id}, 'r', parseFloat(this.value))">
+                        </div>
+                        <div class="form-group">
+                            <label>X (pu)</label>
+                            <input type="number" step="0.001" value="${component.x}" onchange="updateProperty('transformer', ${id}, 'x', parseFloat(this.value))">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tap Ratio</label>
+                            <input type="number" step="0.01" value="${component.tap}" onchange="updateProperty('transformer', ${id}, 'tap', parseFloat(this.value))">
+                        </div>
+                        <div class="form-group">
+                            <label>Rating (MVA)</label>
+                            <input type="number" value="${component.rating}" onchange="updateProperty('transformer', ${id}, 'rating', parseFloat(this.value))">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select onchange="updateProperty('transformer', ${id}, 'status', this.value === 'true')">
+                            <option value="true" ${component.status ? 'selected' : ''}>In Service</option>
+                            <option value="false" ${!component.status ? 'selected' : ''}>Out of Service</option>
+                        </select>
+                    </div>
+                `;
+                break;
+
+            case 'shunt':
+                component = state.shunts.find(s => s.id === id);
+                html = `
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" value="${component.name}" onchange="updateProperty('shunt', ${id}, 'name', this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label>B (MVAr at 1.0 pu V)</label>
+                        <input type="number" value="${component.b}" onchange="updateProperty('shunt', ${id}, 'b', parseFloat(this.value))">
+                        <small style="color: var(--text-secondary); font-size: 0.7rem;">Positive = Capacitor, Negative = Reactor</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select onchange="updateProperty('shunt', ${id}, 'status', this.value === 'true')">
+                            <option value="true" ${component.status ? 'selected' : ''}>In Service</option>
+                            <option value="false" ${!component.status ? 'selected' : ''}>Out of Service</option>
+                        </select>
+                    </div>
+                `;
+                break;
+        }
+
+        content.innerHTML = html;
+    }
+
+    function updateProperty(type, id, prop, value) {
+        let component;
+        switch (type) {
+            case 'bus': component = state.buses.find(b => b.id === id); break;
+            case 'generator': component = state.generators.find(g => g.id === id); break;
+            case 'load': component = state.loads.find(l => l.id === id); break;
+            case 'line': component = state.lines.find(l => l.id === id); break;
+            case 'transformer': component = state.transformers.find(t => t.id === id); break;
+            case 'shunt': component = state.shunts.find(s => s.id === id); break;
+        }
+        if (component) {
+            component[prop] = value;
+            render();
+        }
+    }
+
+    // ==================== DELETE ====================
+    function deleteComponent(type, id) {
+        switch (type) {
+            case 'bus':
+                // Remove connected components
+                state.generators = state.generators.filter(g => g.busId !== id);
+                state.loads = state.loads.filter(l => l.busId !== id);
+                state.shunts = state.shunts.filter(s => s.busId !== id);
+                state.lines = state.lines.filter(l => l.fromBus !== id && l.toBus !== id);
+                state.transformers = state.transformers.filter(t => t.fromBus !== id && t.toBus !== id);
+                state.buses = state.buses.filter(b => b.id !== id);
+                log(`Deleted bus and connected components`, 'warning');
+                break;
+            case 'generator':
+                state.generators = state.generators.filter(g => g.id !== id);
+                log(`Deleted generator`, 'warning');
+                break;
+            case 'load':
+                state.loads = state.loads.filter(l => l.id !== id);
+                log(`Deleted load`, 'warning');
+                break;
+            case 'line':
+                state.lines = state.lines.filter(l => l.id !== id);
+                log(`Deleted line`, 'warning');
+                break;
+            case 'transformer':
+                state.transformers = state.transformers.filter(t => t.id !== id);
+                log(`Deleted transformer`, 'warning');
+                break;
+            case 'shunt':
+                state.shunts = state.shunts.filter(s => s.id !== id);
+                log(`Deleted shunt`, 'warning');
+                break;
+        }
+        state.selectedType = null;
+        state.selectedId = null;
+        showPropertyPanel(null, null);
+        updateStatusBar();
+        render();
+    }
+
+    function deleteSelected() {
+        if (state.selectedType && state.selectedId) {
+            deleteComponent(state.selectedType, state.selectedId);
+        }
+        document.getElementById('context-menu').classList.remove('active');
+    }
+
+    function editSelected() {
+        document.getElementById('context-menu').classList.remove('active');
+        // Property panel already shown
+    }
+
+    function duplicateSelected() {
+        document.getElementById('context-menu').classList.remove('active');
+        if (state.selectedType === 'bus') {
+            const bus = state.buses.find(b => b.id === state.selectedId);
+            if (bus) {
+                createBus(bus.x + 60, bus.y + 60);
+            }
+        }
+    }
+
+    // ==================== STATUS BAR ====================
+    function updateStatusBar() {
+        document.getElementById('bus-count').textContent = state.buses.length;
+        document.getElementById('branch-count').textContent = state.lines.length + state.transformers.length;
+
+        const dot = document.getElementById('status-dot');
+        const text = document.getElementById('status-text');
+
+        if (state.results) {
+            dot.className = 'status-dot green';
+            text.textContent = 'Solved';
+        } else {
+            dot.className = 'status-dot';
+            text.textContent = 'Ready';
+        }
+    }
+
+    // ==================== MODAL HANDLERS ====================
+    function showLoadPresets() {
+        document.getElementById('preset-modal').classList.add('active');
+    }
+
+    function showHelp() {
+        document.getElementById('help-modal').classList.add('active');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('active');
+    }
+
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.classList.remove('active');
+        });
+    });
+
+    // Terminal tabs
+    document.querySelectorAll('.terminal-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.terminal-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            showTerminalTab(tab.dataset.tab);
+        });
+    });
+
+    function showTerminalTab(tabName) {
+        const content = document.getElementById('terminal-content');
+
+        switch (tabName) {
+            case 'console':
+                // Keep console as-is
+                break;
+            case 'results':
+                if (state.results) {
+                    content.innerHTML = formatResultsTable();
+                } else {
+                    content.innerHTML = '<div class="terminal-line muted">No results. Run power flow first.</div>';
+                }
+                break;
+            case 'buses':
+                content.innerHTML = formatBusTable();
+                break;
+            case 'branches':
+                content.innerHTML = formatBranchTable();
+                break;
+        }
+    }
+
+    function formatBusTable() {
+        if (state.buses.length === 0) return '<div class="terminal-line muted">No buses in system.</div>';
+
+        let html = '<table class="results-table"><tr><th>ID</th><th>Name</th><th>Type</th><th>Vnom</th><th>Vm</th><th>Va</th></tr>';
+        state.buses.forEach(bus => {
+            html += `<tr>
+                <td>${bus.id}</td>
+                <td>${bus.name}</td>
+                <td>${bus.type}</td>
+                <td>${bus.vnom} kV</td>
+                <td>${bus.vm !== undefined ? bus.vm.toFixed(4) + ' pu' : '-'}</td>
+                <td>${bus.va !== undefined ? (bus.va * 180 / Math.PI).toFixed(2) + '°' : '-'}</td>
+            </tr>`;
+        });
+        html += '</table>';
+        return html;
+    }
+
+    function formatBranchTable() {
+        if (state.lines.length === 0 && state.transformers.length === 0) {
+            return '<div class="terminal-line muted">No branches in system.</div>';
+        }
+
+        let html = '<table class="results-table"><tr><th>Name</th><th>From</th><th>To</th><th>R</th><th>X</th><th>Status</th></tr>';
+
+        state.lines.forEach(line => {
+            const from = state.buses.find(b => b.id === line.fromBus);
+            const to = state.buses.find(b => b.id === line.toBus);
+            html += `<tr>
+                <td>${line.name}</td>
+                <td>${from?.name || '-'}</td>
+                <td>${to?.name || '-'}</td>
+                <td>${line.r.toFixed(4)}</td>
+                <td>${line.x.toFixed(4)}</td>
+                <td>${line.status ? 'In' : 'Out'}</td>
+            </tr>`;
+        });
+
+        state.transformers.forEach(xfmr => {
+            const from = state.buses.find(b => b.id === xfmr.fromBus);
+            const to = state.buses.find(b => b.id === xfmr.toBus);
+            html += `<tr>
+                <td>${xfmr.name} (T)</td>
+                <td>${from?.name || '-'}</td>
+                <td>${to?.name || '-'}</td>
+                <td>${xfmr.r.toFixed(4)}</td>
+                <td>${xfmr.x.toFixed(4)}</td>
+                <td>${xfmr.status ? 'In' : 'Out'}</td>
+            </tr>`;
+        });
+
+        html += '</table>';
+        return html;
+    }
+
+    function formatResultsTable() {
+        let html = '<div class="terminal-line success">Power Flow Results</div>';
+        html += `<div class="terminal-line muted">Base MVA: ${state.baseMVA}</div>`;
+        html += formatBusTable();
+        return html;
+    }
+
+    // ==================== TERMINAL COMMANDS ====================
+    function handleTerminalInput(e) {
+        if (e.key === 'Enter') {
+            const input = e.target;
+            const cmd = input.value.trim().toLowerCase();
+            log('> ' + input.value, 'muted');
+
+            switch (cmd) {
+                case 'help':
+                    showHelp();
+                    break;
+                case 'clear':
+                    clearTerminal();
+                    break;
+                case 'run':
+                case 'pf':
+                    runPowerFlow();
+                    break;
+                case 'buses':
+                    showTerminalTab('buses');
+                    break;
+                case 'branches':
+                    showTerminalTab('branches');
+                    break;
+                case 'results':
+                    showTerminalTab('results');
+                    break;
+                case 'export':
+                    exportSystem();
+                    break;
+                case 'n1':
+                    runContingency();
+                    break;
+                case 'ed':
+                    runEconomicDispatch();
+                    break;
+                default:
+                    if (cmd) log(`Unknown command: ${cmd}. Type 'help' for available commands.`, 'error');
+            }
+
+            input.value = '';
+        }
+    }
+
+    // ==================== IMPORT/EXPORT ====================
+    function exportSystem() {
+        const data = {
+            version: '1.0',
+            baseMVA: state.baseMVA,
+            buses: state.buses,
+            generators: state.generators,
+            loads: state.loads,
+            lines: state.lines,
+            transformers: state.transformers,
+            shunts: state.shunts
+        };
+
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'powergrid_system.json';
+        a.click();
+
+        URL.revokeObjectURL(url);
+        log('System exported to powergrid_system.json', 'success');
+    }
+
+    function importSystem() {
+        document.getElementById('file-input').click();
+    }
+
+    function handleFileImport(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+
+                state.baseMVA = data.baseMVA || 100;
+                state.buses = data.buses || [];
+                state.generators = data.generators || [];
+                state.loads = data.loads || [];
+                state.lines = data.lines || [];
+                state.transformers = data.transformers || [];
+                state.shunts = data.shunts || [];
+
+                // Update next IDs
+                state.nextId.bus = Math.max(...state.buses.map(b => b.id), 0) + 1;
+                state.nextId.gen = Math.max(...state.generators.map(g => g.id), 0) + 1;
+                state.nextId.load = Math.max(...state.loads.map(l => l.id), 0) + 1;
+                state.nextId.line = Math.max(...state.lines.map(l => l.id), 0) + 1;
+                state.nextId.xfmr = Math.max(...state.transformers.map(t => t.id), 0) + 1;
+                state.nextId.shunt = Math.max(...state.shunts.map(s => s.id), 0) + 1;
+
+                state.results = null;
+                updateStatusBar();
+                render();
+
+                log(`Imported system: ${state.buses.length} buses, ${state.lines.length + state.transformers.length} branches`, 'success');
+            } catch (err) {
+                log('Error importing file: ' + err.message, 'error');
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+    }
+
+    // ==================== CLEAR ====================
+    function clearResults() {
+        state.buses.forEach(bus => {
+            bus.vm = undefined;
+            bus.va = undefined;
+        });
+        state.lines.forEach(line => {
+            line.pFrom = undefined;
+            line.qFrom = undefined;
+            line.pTo = undefined;
+            line.qTo = undefined;
+            line.pLoss = undefined;
+        });
+        state.results = null;
+        updateStatusBar();
+        render();
+        log('Results cleared', 'info');
+    }
+
+    function clearAll() {
+        if (!confirm('Clear entire system? This cannot be undone.')) return;
+
+        state.buses = [];
+        state.generators = [];
+        state.loads = [];
+        state.lines = [];
+        state.transformers = [];
+        state.shunts = [];
+        state.selectedId = null;
+        state.selectedType = null;
+        state.results = null;
+        state.nextId = { bus: 1, gen: 1, load: 1, line: 1, xfmr: 1, shunt: 1 };
+
+        showPropertyPanel(null, null);
+        updateStatusBar();
+        render();
+        log('System cleared', 'warning');
+    }
+
+    // ============================================
+    // NEWTON-RAPHSON POWER FLOW SOLVER
+    // ============================================
+
+    function runPowerFlow() {
+        // Validation
+        if (state.buses.length === 0) {
+            log('Error: No buses in system', 'error');
+            return false;
+        }
+
+        const slackBuses = state.buses.filter(b => b.type === 'slack');
+        if (slackBuses.length === 0) {
+            log('Error: No slack bus defined. Set one bus as Slack type.', 'error');
+            return false;
+        }
+        if (slackBuses.length > 1) {
+            log('Warning: Multiple slack buses found. Using first one.', 'warning');
+        }
+
+        log('Starting Newton-Raphson Power Flow...', 'info');
+        const startTime = performance.now();
+
+        try {
+            // Create bus index mapping
+            const busIndex = {};
+            state.buses.forEach((bus, i) => {
+                busIndex[bus.id] = i;
+            });
+            const n = state.buses.length;
+
+            // Build Y-bus matrix (complex admittance)
+            const Y = buildYBus(busIndex, n);
+
+            // Initialize voltage (flat start)
+            const V = new Array(n);  // Voltage magnitudes
+            const theta = new Array(n);  // Voltage angles
+
+            state.buses.forEach((bus, i) => {
+                if (bus.type === 'slack') {
+                    V[i] = 1.0;  // Slack at 1.0 pu
+                    theta[i] = 0;  // Reference angle
+                } else if (bus.type === 'pv') {
+                    // Find generator voltage setpoint
+                    const gen = state.generators.find(g => g.busId === bus.id && g.status);
+                    V[i] = gen ? gen.vset : 1.0;
+                    theta[i] = 0;
+                } else {
+                    V[i] = 1.0;  // Flat start
+                    theta[i] = 0;
+                }
+            });
+
+            // Calculate scheduled power injections (in pu)
+            const Psch = new Array(n).fill(0);
+            const Qsch = new Array(n).fill(0);
+
+            // Add generator power
+            state.generators.filter(g => g.status).forEach(gen => {
+                const idx = busIndex[gen.busId];
+                if (idx !== undefined) {
+                    Psch[idx] += gen.pg / state.baseMVA;
+                }
+            });
+
+            // Subtract load power
+            state.loads.filter(l => l.status).forEach(load => {
+                const idx = busIndex[load.busId];
+                if (idx !== undefined) {
+                    Psch[idx] -= load.pl / state.baseMVA;
+                    Qsch[idx] -= load.ql / state.baseMVA;
+                }
+            });
+
+            // Add shunt reactive power (Q = B * V^2)
+            state.shunts.filter(s => s.status).forEach(shunt => {
+                const idx = busIndex[shunt.busId];
+                if (idx !== undefined) {
+                    // Shunt is handled in Y-bus, not here
+                }
+            });
+
+            // Identify bus types for iteration
+            const pqBuses = [];
+            const pvBuses = [];
+            const slackIdx = busIndex[slackBuses[0].id];
+
+            state.buses.forEach((bus, i) => {
+                if (bus.type === 'pq') pqBuses.push(i);
+                else if (bus.type === 'pv') pvBuses.push(i);
+            });
+
+            // Newton-Raphson iteration
+            const maxIter = 50;
+            const tolerance = 1e-6;
+            let converged = false;
+            let iter = 0;
+
+            while (iter < maxIter && !converged) {
+                iter++;
+
+                // Calculate power injections from current voltages
+                const { Pcalc, Qcalc } = calculatePower(Y, V, theta, n);
+
+                // Calculate mismatches
+                const dP = [];
+                const dQ = [];
+
+                // P mismatch for all non-slack buses
+                for (let i = 0; i < n; i++) {
+                    if (i !== slackIdx) {
+                        dP.push(Psch[i] - Pcalc[i]);
+                    }
+                }
+
+                // Q mismatch for PQ buses only
+                for (const i of pqBuses) {
+                    dQ.push(Qsch[i] - Qcalc[i]);
+                }
+
+                const mismatch = [...dP, ...dQ];
+                const maxMismatch = Math.max(...mismatch.map(Math.abs));
+
+                log(`  Iteration ${iter}: Max mismatch = ${maxMismatch.toFixed(6)} pu`, 'muted');
+
+                if (maxMismatch < tolerance) {
+                    converged = true;
+                    break;
+                }
+
+                // Build Jacobian matrix
+                const J = buildJacobian(Y, V, theta, n, slackIdx, pqBuses, pvBuses);
+
+                // Solve J * dx = mismatch
+                const dx = solveLinearSystem(J, mismatch);
+
+                if (!dx) {
+                    log('Error: Jacobian is singular. Check system connectivity.', 'error');
+                    return false;
+                }
+
+                // Update angles (for non-slack buses)
+                let idx = 0;
+                for (let i = 0; i < n; i++) {
+                    if (i !== slackIdx) {
+                        theta[i] += dx[idx];
+                        idx++;
+                    }
+                }
+
+                // Update voltage magnitudes (for PQ buses)
+                for (const i of pqBuses) {
+                    V[i] += dx[idx] * V[i];  // dV/V
+                    idx++;
+                }
+            }
+
+            if (!converged) {
+                log(`Warning: Did not converge after ${maxIter} iterations`, 'warning');
+            } else {
+                log(`Converged in ${iter} iterations (tolerance: ${tolerance})`, 'success');
+            }
+
+            // Store results in buses
+            state.buses.forEach((bus, i) => {
+                bus.vm = V[i];
+                bus.va = theta[i];
+            });
+
+            // Calculate line flows
+            calculateLineFlows(Y, V, theta, busIndex);
+
+            // Calculate total losses
+            let totalPLoss = 0;
+            let totalQLoss = 0;
+            state.lines.forEach(line => {
+                if (line.pLoss !== undefined) {
+                    totalPLoss += line.pLoss;
+                }
+            });
+
+            const elapsed = (performance.now() - startTime).toFixed(1);
+            log(`Power flow completed in ${elapsed}ms`, 'success');
+            log(`Total system losses: ${(totalPLoss * state.baseMVA).toFixed(2)} MW`, 'info');
+
+            state.results = { converged, iterations: iter };
+            updateStatusBar();
+            render();
+
+            // Show results in property panel if component selected
+            if (state.selectedType && state.selectedId) {
+                showPropertyPanel(state.selectedType, state.selectedId);
+            }
+
+            return converged;
+
+        } catch (err) {
+            log(`Power flow error: ${err.message}`, 'error');
+            console.error(err);
+            return false;
+        }
+    }
+
+    function buildYBus(busIndex, n) {
+        // Initialize complex Y matrix as [real, imag] pairs
+        const Y = [];
+        for (let i = 0; i < n; i++) {
+            Y[i] = [];
+            for (let j = 0; j < n; j++) {
+                Y[i][j] = [0, 0];  // [G, B]
+            }
+        }
+
+        // Add line admittances
+        state.lines.filter(l => l.status).forEach(line => {
+            const i = busIndex[line.fromBus];
+            const j = busIndex[line.toBus];
+            if (i === undefined || j === undefined) return;
+
+            const r = line.r;
+            const x = line.x;
+            const b = line.b;  // Line charging susceptance
+
+            // Series admittance y = 1/(r + jx) = (r - jx) / (r^2 + x^2)
+            const denom = r * r + x * x;
+            const g = r / denom;
+            const bSeries = -x / denom;
+
+            // Off-diagonal elements (negative of admittance)
+            Y[i][j][0] -= g;
+            Y[i][j][1] -= bSeries;
+            Y[j][i][0] -= g;
+            Y[j][i][1] -= bSeries;
+
+            // Diagonal elements (positive of admittance + shunt)
+            Y[i][i][0] += g;
+            Y[i][i][1] += bSeries + b / 2;  // Line charging
+            Y[j][j][0] += g;
+            Y[j][j][1] += bSeries + b / 2;
+        });
+
+        // Add transformer admittances
+        state.transformers.filter(t => t.status).forEach(xfmr => {
+            const i = busIndex[xfmr.fromBus];
+            const j = busIndex[xfmr.toBus];
+            if (i === undefined || j === undefined) return;
+
+            const r = xfmr.r;
+            const x = xfmr.x;
+            const tap = xfmr.tap;
+
+            // Series admittance
+            const denom = r * r + x * x;
+            const g = r / denom;
+            const b = -x / denom;
+
+            // Pi-model for transformer with tap
+            // Y_ii = y / tap^2
+            // Y_jj = y
+            // Y_ij = Y_ji = -y / tap
+
+            Y[i][i][0] += g / (tap * tap);
+            Y[i][i][1] += b / (tap * tap);
+
+            Y[j][j][0] += g;
+            Y[j][j][1] += b;
+
+            Y[i][j][0] -= g / tap;
+            Y[i][j][1] -= b / tap;
+            Y[j][i][0] -= g / tap;
+            Y[j][i][1] -= b / tap;
+        });
+
+        // Add shunt admittances (capacitors/reactors)
+        state.shunts.filter(s => s.status).forEach(shunt => {
+            const i = busIndex[shunt.busId];
+            if (i === undefined) return;
+
+            // B in MVAr at 1.0 pu, convert to pu susceptance
+            const bShunt = shunt.b / state.baseMVA;
+            Y[i][i][1] += bShunt;
+        });
+
+        return Y;
+    }
+
+    function calculatePower(Y, V, theta, n) {
+        const Pcalc = new Array(n).fill(0);
+        const Qcalc = new Array(n).fill(0);
+
+        for (let i = 0; i < n; i++) {
+            for (let j = 0; j < n; j++) {
+                const Gij = Y[i][j][0];
+                const Bij = Y[i][j][1];
+                const thetaij = theta[i] - theta[j];
+
+                Pcalc[i] += V[i] * V[j] * (Gij * Math.cos(thetaij) + Bij * Math.sin(thetaij));
+                Qcalc[i] += V[i] * V[j] * (Gij * Math.sin(thetaij) - Bij * Math.cos(thetaij));
+            }
+        }
+
+        return { Pcalc, Qcalc };
+    }
+
+    function buildJacobian(Y, V, theta, n, slackIdx, pqBuses, pvBuses) {
+        const { Pcalc, Qcalc } = calculatePower(Y, V, theta, n);
+
+        // Size: (n-1 + npq) x (n-1 + npq)
+        // [dP/dtheta  dP/dV] [dtheta]   [dP]
+        // [dQ/dtheta  dQ/dV] [dV/V  ] = [dQ]
+
+        const nonSlack = [];
+        for (let i = 0; i < n; i++) {
+            if (i !== slackIdx) nonSlack.push(i);
+        }
+
+        const size = nonSlack.length + pqBuses.length;
+        const J = [];
+        for (let i = 0; i < size; i++) {
+            J[i] = new Array(size).fill(0);
+        }
+
+        // J1: dP/dtheta (for non-slack rows and non-slack columns)
+        for (let ii = 0; ii < nonSlack.length; ii++) {
+            const i = nonSlack[ii];
+            for (let jj = 0; jj < nonSlack.length; jj++) {
+                const j = nonSlack[jj];
+                const Gij = Y[i][j][0];
+                const Bij = Y[i][j][1];
+                const thetaij = theta[i] - theta[j];
+
+                if (i === j) {
+                    // Diagonal: dPi/dtheta_i = -Qi - Bii * Vi^2
+                    J[ii][jj] = -Qcalc[i] - Bij * V[i] * V[i];
+                } else {
+                    // Off-diagonal: dPi/dtheta_j = Vi * Vj * (Gij*sin(thetaij) - Bij*cos(thetaij))
+                    J[ii][jj] = V[i] * V[j] * (Gij * Math.sin(thetaij) - Bij * Math.cos(thetaij));
+                }
+            }
+        }
+
+        // J2: dP/dV (for non-slack rows and PQ columns)
+        for (let ii = 0; ii < nonSlack.length; ii++) {
+            const i = nonSlack[ii];
+            for (let jj = 0; jj < pqBuses.length; jj++) {
+                const j = pqBuses[jj];
+                const colIdx = nonSlack.length + jj;
+                const Gij = Y[i][j][0];
+                const Bij = Y[i][j][1];
+                const thetaij = theta[i] - theta[j];
+
+                if (i === j) {
+                    // Diagonal: dPi/dVi = Pi/Vi + Gii * Vi
+                    J[ii][colIdx] = Pcalc[i] / V[i] + Gij * V[i];
+                } else {
+                    // Off-diagonal: dPi/dVj = Vi * (Gij*cos(thetaij) + Bij*sin(thetaij))
+                    J[ii][colIdx] = V[i] * (Gij * Math.cos(thetaij) + Bij * Math.sin(thetaij));
+                }
+            }
+        }
+
+        // J3: dQ/dtheta (for PQ rows and non-slack columns)
+        for (let ii = 0; ii < pqBuses.length; ii++) {
+            const i = pqBuses[ii];
+            const rowIdx = nonSlack.length + ii;
+            for (let jj = 0; jj < nonSlack.length; jj++) {
+                const j = nonSlack[jj];
+                const Gij = Y[i][j][0];
+                const Bij = Y[i][j][1];
+                const thetaij = theta[i] - theta[j];
+
+                if (i === j) {
+                    // Diagonal: dQi/dtheta_i = Pi - Gii * Vi^2
+                    J[rowIdx][jj] = Pcalc[i] - Gij * V[i] * V[i];
+                } else {
+                    // Off-diagonal: dQi/dtheta_j = -Vi * Vj * (Gij*cos(thetaij) + Bij*sin(thetaij))
+                    J[rowIdx][jj] = -V[i] * V[j] * (Gij * Math.cos(thetaij) + Bij * Math.sin(thetaij));
+                }
+            }
+        }
+
+        // J4: dQ/dV (for PQ rows and PQ columns)
+        for (let ii = 0; ii < pqBuses.length; ii++) {
+            const i = pqBuses[ii];
+            const rowIdx = nonSlack.length + ii;
+            for (let jj = 0; jj < pqBuses.length; jj++) {
+                const j = pqBuses[jj];
+                const colIdx = nonSlack.length + jj;
+                const Gij = Y[i][j][0];
+                const Bij = Y[i][j][1];
+                const thetaij = theta[i] - theta[j];
+
+                if (i === j) {
+                    // Diagonal: dQi/dVi = Qi/Vi - Bii * Vi
+                    J[rowIdx][colIdx] = Qcalc[i] / V[i] - Bij * V[i];
+                } else {
+                    // Off-diagonal: dQi/dVj = Vi * (Gij*sin(thetaij) - Bij*cos(thetaij))
+                    J[rowIdx][colIdx] = V[i] * (Gij * Math.sin(thetaij) - Bij * Math.cos(thetaij));
+                }
+            }
+        }
+
+        return J;
+    }
+
+    function solveLinearSystem(A, b) {
+        // Gaussian elimination with partial pivoting
+        const n = A.length;
+        const augmented = A.map((row, i) => [...row, b[i]]);
+
+        for (let col = 0; col < n; col++) {
+            // Find pivot
+            let maxRow = col;
+            for (let row = col + 1; row < n; row++) {
+                if (Math.abs(augmented[row][col]) > Math.abs(augmented[maxRow][col])) {
+                    maxRow = row;
+                }
+            }
+
+            // Swap rows
+            [augmented[col], augmented[maxRow]] = [augmented[maxRow], augmented[col]];
+
+            // Check for singularity
+            if (Math.abs(augmented[col][col]) < 1e-12) {
+                return null;
+            }
+
+            // Eliminate
+            for (let row = col + 1; row < n; row++) {
+                const factor = augmented[row][col] / augmented[col][col];
+                for (let j = col; j <= n; j++) {
+                    augmented[row][j] -= factor * augmented[col][j];
+                }
+            }
+        }
+
+        // Back substitution
+        const x = new Array(n);
+        for (let i = n - 1; i >= 0; i--) {
+            x[i] = augmented[i][n];
+            for (let j = i + 1; j < n; j++) {
+                x[i] -= augmented[i][j] * x[j];
+            }
+            x[i] /= augmented[i][i];
+        }
+
+        return x;
+    }
+
+    function calculateLineFlows(Y, V, theta, busIndex) {
+        state.lines.forEach(line => {
+            if (!line.status) {
+                line.pFrom = undefined;
+                return;
+            }
+
+            const i = busIndex[line.fromBus];
+            const j = busIndex[line.toBus];
+            if (i === undefined || j === undefined) return;
+
+            const r = line.r;
+            const x = line.x;
+            const b = line.b;
+
+            // Series admittance
+            const denom = r * r + x * x;
+            const g = r / denom;
+            const bSeries = -x / denom;
+
+            // Complex voltages
+            const Vi = V[i] * Math.cos(theta[i]);
+            const ViIm = V[i] * Math.sin(theta[i]);
+            const Vj = V[j] * Math.cos(theta[j]);
+            const VjIm = V[j] * Math.sin(theta[j]);
+
+            // Current from i to j: I_ij = y * (Vi - Vj) + j*b/2 * Vi
+            const dVr = Vi - Vj;
+            const dVi = ViIm - VjIm;
+
+            // I = (g + jb) * (dVr + j*dVi) = (g*dVr - b*dVi) + j(g*dVi + b*dVr)
+            const Iijr = g * dVr - bSeries * dVi;
+            const Iiji = g * dVi + bSeries * dVr;
+
+            // Add shunt current: j*b/2 * Vi
+            const IshuntR = -(b / 2) * ViIm;
+            const IshuntI = (b / 2) * Vi;
+            const IijTotR = Iijr + IshuntR;
+            const IijTotI = Iiji + IshuntI;
+
+            // Power: S = V * I*
+            const Sij_r = Vi * IijTotR + ViIm * IijTotI;  // P
+            const Sij_i = ViIm * IijTotR - Vi * IijTotI;  // Q
+
+            // Current from j to i
+            const Ijir = g * (-dVr) - bSeries * (-dVi);
+            const Ijii = g * (-dVi) + bSeries * (-dVr);
+            const Jshuntr = -(b / 2) * VjIm;
+            const Jshunti = (b / 2) * Vj;
+            const IjiTotR = Ijir + Jshuntr;
+            const IjiTotI = Ijii + Jshunti;
+
+            const Sji_r = Vj * IjiTotR + VjIm * IjiTotI;
+            const Sji_i = VjIm * IjiTotR - Vj * IjiTotI;
+
+            // Store results (in MW/MVAr)
+            line.pFrom = Sij_r * state.baseMVA;
+            line.qFrom = Sij_i * state.baseMVA;
+            line.pTo = Sji_r * state.baseMVA;
+            line.qTo = Sji_i * state.baseMVA;
+            line.pLoss = (Sij_r + Sji_r);  // In pu
+        });
+    }
+
+    // ============================================
+    // CONTINGENCY ANALYSIS (N-1)
+    // ============================================
+
+    function runContingency() {
+        if (state.buses.length === 0 || state.lines.length === 0) {
+            log('Error: Need buses and lines for contingency analysis', 'error');
+            return;
+        }
+
+        log('Starting N-1 Contingency Analysis...', 'info');
+        const results = [];
+
+        // Test each line outage
+        state.lines.forEach(line => {
+            if (!line.status) return;
+
+            // Temporarily disable line
+            line.status = false;
+            log(`Testing outage of ${line.name}...`, 'muted');
+
+            // Run power flow
+            const converged = runPowerFlowQuiet();
+
+            // Check for violations
+            let violations = [];
+
+            if (!converged) {
+                violations.push('Did not converge');
+            } else {
+                // Check voltage violations
+                state.buses.forEach(bus => {
+                    if (bus.vm < 0.9) {
+                        violations.push(`${bus.name}: V=${bus.vm.toFixed(3)} pu (low)`);
+                    } else if (bus.vm > 1.1) {
+                        violations.push(`${bus.name}: V=${bus.vm.toFixed(3)} pu (high)`);
+                    }
+                });
+
+                // Check thermal violations
+                state.lines.forEach(l => {
+                    if (l.status && l.pFrom !== undefined) {
+                        const loading = Math.sqrt(l.pFrom * l.pFrom + l.qFrom * l.qFrom) / l.rating * 100;
+                        if (loading > 100) {
+                            violations.push(`${l.name}: ${loading.toFixed(0)}% loading`);
+                        }
+                    }
+                });
+            }
+
+            results.push({
+                contingency: line.name,
+                converged,
+                violations
+            });
+
+            // Restore line
+            line.status = true;
+        });
+
+        // Restore base case
+        runPowerFlow();
+
+        // Display results
+        log('N-1 Analysis Complete:', 'success');
+        log('─'.repeat(50), 'muted');
+
+        let critical = 0;
+        results.forEach(r => {
+            if (r.violations.length > 0) {
+                critical++;
+                log(`${r.contingency}: ${r.violations.join(', ')}`, 'warning');
+            } else {
+                log(`${r.contingency}: OK`, 'success');
+            }
+        });
+
+        log('─'.repeat(50), 'muted');
+        log(`Summary: ${results.length} contingencies, ${critical} with violations`, critical > 0 ? 'warning' : 'success');
+    }
+
+    function runPowerFlowQuiet() {
+        // Silent version of power flow for contingency analysis
+        try {
+            const busIndex = {};
+            state.buses.forEach((bus, i) => { busIndex[bus.id] = i; });
+            const n = state.buses.length;
+            const Y = buildYBus(busIndex, n);
+
+            const V = new Array(n);
+            const theta = new Array(n);
+            const slackBuses = state.buses.filter(b => b.type === 'slack');
+            if (slackBuses.length === 0) return false;
+
+            state.buses.forEach((bus, i) => {
+                if (bus.type === 'pv') {
+                    const gen = state.generators.find(g => g.busId === bus.id && g.status);
+                    V[i] = gen ? gen.vset : 1.0;
+                } else {
+                    V[i] = 1.0;
+                }
+                theta[i] = 0;
+            });
+
+            const Psch = new Array(n).fill(0);
+            const Qsch = new Array(n).fill(0);
+
+            state.generators.filter(g => g.status).forEach(gen => {
+                const idx = busIndex[gen.busId];
+                if (idx !== undefined) Psch[idx] += gen.pg / state.baseMVA;
+            });
+
+            state.loads.filter(l => l.status).forEach(load => {
+                const idx = busIndex[load.busId];
+                if (idx !== undefined) {
+                    Psch[idx] -= load.pl / state.baseMVA;
+                    Qsch[idx] -= load.ql / state.baseMVA;
+                }
+            });
+
+            const pqBuses = [];
+            const pvBuses = [];
+            const slackIdx = busIndex[slackBuses[0].id];
+            state.buses.forEach((bus, i) => {
+                if (bus.type === 'pq') pqBuses.push(i);
+                else if (bus.type === 'pv') pvBuses.push(i);
+            });
+
+            for (let iter = 0; iter < 30; iter++) {
+                const { Pcalc, Qcalc } = calculatePower(Y, V, theta, n);
+
+                const dP = [];
+                const dQ = [];
+                for (let i = 0; i < n; i++) {
+                    if (i !== slackIdx) dP.push(Psch[i] - Pcalc[i]);
+                }
+                for (const i of pqBuses) dQ.push(Qsch[i] - Qcalc[i]);
+
+                const mismatch = [...dP, ...dQ];
+                if (Math.max(...mismatch.map(Math.abs)) < 1e-5) {
+                    state.buses.forEach((bus, i) => { bus.vm = V[i]; bus.va = theta[i]; });
+                    calculateLineFlows(Y, V, theta, busIndex);
+                    return true;
+                }
+
+                const J = buildJacobian(Y, V, theta, n, slackIdx, pqBuses, pvBuses);
+                const dx = solveLinearSystem(J, mismatch);
+                if (!dx) return false;
+
+                let idx = 0;
+                for (let i = 0; i < n; i++) {
+                    if (i !== slackIdx) { theta[i] += dx[idx]; idx++; }
+                }
+                for (const i of pqBuses) { V[i] += dx[idx] * V[i]; idx++; }
+            }
+            return false;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    // ============================================
+    // PV AND QV CURVE ANALYSIS
+    // ============================================
+
+    function runPVCurve() {
+        if (state.buses.length === 0) {
+            log('Error: No buses in system', 'error');
+            return;
+        }
+
+        log('Starting PV Curve Analysis...', 'info');
+
+        // Get total load
+        let totalP = 0;
+        state.loads.forEach(l => { if (l.status) totalP += l.pl; });
+
+        if (totalP === 0) {
+            log('Error: No load in system for PV curve', 'error');
+            return;
+        }
+
+        // Store original loads
+        const origLoads = state.loads.map(l => ({ id: l.id, pl: l.pl, ql: l.ql }));
+
+        const loadingLevels = [];
+        const voltages = {};
+
+        // Initialize voltage tracking for each bus
+        state.buses.forEach(bus => {
+            if (bus.type !== 'slack') voltages[bus.id] = [];
+        });
+
+        // Increase load from 50% to collapse point
+        for (let mult = 0.5; mult <= 2.0; mult += 0.1) {
+            // Scale loads
+            state.loads.forEach(load => {
+                const orig = origLoads.find(o => o.id === load.id);
+                load.pl = orig.pl * mult;
+                load.ql = orig.ql * mult;
+            });
+
+            const converged = runPowerFlowQuiet();
+
+            if (!converged) {
+                log(`Loading ${(mult * 100).toFixed(0)}%: Did not converge (nose point)`, 'warning');
+                break;
+            }
+
+            loadingLevels.push(mult * 100);
+            state.buses.forEach(bus => {
+                if (bus.type !== 'slack') {
+                    voltages[bus.id].push(bus.vm);
+                }
+            });
+        }
+
+        // Restore original loads
+        origLoads.forEach(orig => {
+            const load = state.loads.find(l => l.id === orig.id);
+            if (load) { load.pl = orig.pl; load.ql = orig.ql; }
+        });
+
+        // Restore base case
+        runPowerFlow();
+
+        // Display results
+        log('PV Curve Results:', 'success');
+        log('Loading%  ' + Object.keys(voltages).map(id => {
+            const bus = state.buses.find(b => b.id === parseInt(id));
+            return bus ? bus.name.substring(0, 8).padStart(8) : 'Unknown';
+        }).join(' '), 'muted');
+
+        loadingLevels.forEach((loading, i) => {
+            const vols = Object.keys(voltages).map(id =>
+                voltages[id][i].toFixed(3).padStart(8)
+            ).join(' ');
+            log(`${loading.toFixed(0).padStart(7)}%  ${vols}`, 'info');
+        });
+
+        log(`Maximum loading before collapse: ${loadingLevels[loadingLevels.length - 1].toFixed(0)}%`, 'success');
+    }
+
+    function runQVCurve() {
+        if (state.buses.length === 0) {
+            log('Error: No buses in system', 'error');
+            return;
+        }
+
+        // Find weakest bus (lowest voltage in base case)
+        runPowerFlow();
+
+        let weakestBus = null;
+        let minV = Infinity;
+
+        state.buses.forEach(bus => {
+            if (bus.type === 'pq' && bus.vm < minV) {
+                minV = bus.vm;
+                weakestBus = bus;
+            }
+        });
+
+        if (!weakestBus) {
+            log('Error: No PQ bus found for QV analysis', 'error');
+            return;
+        }
+
+        log(`Starting QV Curve Analysis at ${weakestBus.name}...`, 'info');
+
+        const results = [];
+
+        // Vary voltage from 0.8 to 1.1 and find required Q
+        for (let vSet = 0.8; vSet <= 1.1; vSet += 0.02) {
+            // Temporarily make bus PV type
+            const origType = weakestBus.type;
+            weakestBus.type = 'pv';
+
+            // Add temporary generator at this bus
+            const tempGen = {
+                id: 9999,
+                name: 'QV_Temp',
+                busId: weakestBus.id,
+                offset: 0,
+                pg: 0,
+                qg: 0,
+                qmin: -9999,
+                qmax: 9999,
+                vset: vSet,
+                pmax: 0,
+                pmin: 0,
+                status: true
+            };
+            state.generators.push(tempGen);
+
+            const converged = runPowerFlowQuiet();
+
+            if (converged) {
+                // Calculate Q injection needed
+                let qInj = 0;
+                // Q from power balance
+                const busIndex = {};
+                state.buses.forEach((b, i) => { busIndex[b.id] = i; });
+
+                results.push({ v: vSet, q: qInj, converged: true });
+            } else {
+                results.push({ v: vSet, q: NaN, converged: false });
+            }
+
+            // Restore
+            state.generators = state.generators.filter(g => g.id !== 9999);
+            weakestBus.type = origType;
+        }
+
+        // Restore base case
+        runPowerFlow();
+
+        log('QV Curve Results:', 'success');
+        log('Voltage(pu)  Q Required(MVAr)', 'muted');
+        results.forEach(r => {
+            if (r.converged) {
+                log(`${r.v.toFixed(2).padStart(10)}  ${r.q.toFixed(1).padStart(15)}`, 'info');
+            }
+        });
+    }
+
+    // ============================================
+    // ECONOMIC DISPATCH
+    // ============================================
+
+    function runEconomicDispatch() {
+        const gens = state.generators.filter(g => g.status);
+
+        if (gens.length === 0) {
+            log('Error: No online generators for economic dispatch', 'error');
+            return;
+        }
+
+        // Total load
+        let totalLoad = 0;
+        state.loads.filter(l => l.status).forEach(l => { totalLoad += l.pl; });
+
+        if (totalLoad === 0) {
+            log('Error: No load for economic dispatch', 'error');
+            return;
+        }
+
+        log(`Economic Dispatch for ${totalLoad.toFixed(1)} MW load...`, 'info');
+
+        // Lambda iteration method
+        // Cost function: C = a + b*P + c*P^2
+        // Incremental cost: dC/dP = b + 2*c*P = lambda
+        // So: P = (lambda - b) / (2*c)
+
+        // Initial lambda guess
+        let lambdaMin = 0;
+        let lambdaMax = 100;
+        let lambda = 50;
+        const tolerance = 0.1;
+
+        for (let iter = 0; iter < 50; iter++) {
+            let totalGen = 0;
+
+            gens.forEach(gen => {
+                const [a, b, c] = gen.cost;
+                if (c > 0) {
+                    // P = (lambda - b) / (2*c)
+                    let p = (lambda - b) / (2 * c);
+                    p = Math.max(gen.pmin, Math.min(gen.pmax, p));
+                    totalGen += p;
+                } else {
+                    // Linear cost, use limits
+                    totalGen += gen.pmax;
+                }
+            });
+
+            if (Math.abs(totalGen - totalLoad) < tolerance) {
+                break;
+            }
+
+            if (totalGen > totalLoad) {
+                lambdaMax = lambda;
+            } else {
+                lambdaMin = lambda;
+            }
+            lambda = (lambdaMin + lambdaMax) / 2;
+        }
+
+        // Apply optimal dispatch
+        let totalCost = 0;
+        log('Optimal Generator Schedule:', 'success');
+        log('─'.repeat(50), 'muted');
+        log('Generator      P(MW)    Cost($/h)    Inc.Cost', 'muted');
+
+        gens.forEach(gen => {
+            const [a, b, c] = gen.cost;
+            let p;
+            if (c > 0) {
+                p = (lambda - b) / (2 * c);
+                p = Math.max(gen.pmin, Math.min(gen.pmax, p));
+            } else {
+                p = gen.pg;  // Keep current
+            }
+
+            gen.pg = p;
+            const cost = a + b * p + c * p * p;
+            const incCost = b + 2 * c * p;
+            totalCost += cost;
+
+            log(`${gen.name.padEnd(12)} ${p.toFixed(1).padStart(8)} ${cost.toFixed(1).padStart(10)} ${incCost.toFixed(2).padStart(10)}`, 'info');
+        });
+
+        log('─'.repeat(50), 'muted');
+        log(`System Lambda: ${lambda.toFixed(2)} $/MWh`, 'info');
+        log(`Total Cost: ${totalCost.toFixed(2)} $/h`, 'success');
+
+        // Re-run power flow with new dispatch
+        runPowerFlow();
+    }
+
+    // ============================================
+    // IEEE TEST CASE PRESETS
+    // ============================================
+
+    function loadPreset(name) {
+        closeModal('preset-modal');
+
+        switch (name) {
+            case 'simple2':
+                loadSimple2Bus();
+                break;
+            case 'ieee9':
+                loadIEEE9Bus();
+                break;
+            case 'ieee14':
+                loadIEEE14Bus();
+                break;
+            case 'ieee30':
+                loadIEEE30Bus();
+                break;
+            case 'radial':
+                loadRadialFeeder();
+                break;
+            case 'ring':
+                loadRingNetwork();
+                break;
+            default:
+                log(`Unknown preset: ${name}`, 'error');
+        }
+    }
+
+    function loadSimple2Bus() {
+        clearAll_silent();
+
+        // Simple 2-bus system
+        createBus(200, 200);  // Bus 1 - Slack
+        createBus(500, 200);  // Bus 2 - Load
+
+        state.buses[0].type = 'slack';
+        state.buses[0].name = 'Gen Bus';
+        state.buses[1].type = 'pq';
+        state.buses[1].name = 'Load Bus';
+
+        createGenerator(state.buses[0].id);
+        state.generators[0].pg = 100;
+
+        createLoad(state.buses[1].id);
+        state.loads[0].pl = 80;
+        state.loads[0].ql = 30;
+
+        createLine(state.buses[0].id, state.buses[1].id);
+        state.lines[0].r = 0.02;
+        state.lines[0].x = 0.1;
+        state.lines[0].b = 0.02;
+
+        log('Loaded Simple 2-Bus System', 'success');
+        render();
+    }
+
+    function loadIEEE9Bus() {
+        clearAll_silent();
+
+        // IEEE 9-bus (WSCC 3-machine) system
+        // Simplified layout
+        const positions = [
+            [300, 100], [500, 100], [700, 100],  // Top row
+            [300, 250], [500, 250], [700, 250],  // Middle row
+            [300, 400], [500, 400], [700, 400]   // Bottom row
+        ];
+
+        // Create buses
+        for (let i = 0; i < 9; i++) {
+            createBus(positions[i][0], positions[i][1]);
+            state.buses[i].name = `Bus ${i + 1}`;
+        }
+
+        // Bus types: 1=slack, 2,3=PV, rest=PQ
+        state.buses[0].type = 'slack';
+        state.buses[1].type = 'pv';
+        state.buses[2].type = 'pv';
+
+        // Generators on buses 1, 2, 3
+        createGenerator(state.buses[0].id); state.generators[0].pg = 71.6; state.generators[0].vset = 1.04;
+        createGenerator(state.buses[1].id); state.generators[1].pg = 163; state.generators[1].vset = 1.025;
+        createGenerator(state.buses[2].id); state.generators[2].pg = 85; state.generators[2].vset = 1.025;
+
+        // Loads on buses 5, 6, 8
+        createLoad(state.buses[4].id); state.loads[0].pl = 125; state.loads[0].ql = 50;
+        createLoad(state.buses[5].id); state.loads[1].pl = 90; state.loads[1].ql = 30;
+        createLoad(state.buses[7].id); state.loads[2].pl = 100; state.loads[2].ql = 35;
+
+        // Lines (simplified impedances)
+        const lineData = [
+            [0, 3, 0.0, 0.0576], [3, 4, 0.017, 0.092], [4, 5, 0.039, 0.17],
+            [2, 5, 0.0, 0.0586], [5, 6, 0.0119, 0.1008], [6, 7, 0.0085, 0.072],
+            [1, 7, 0.0, 0.0625], [7, 8, 0.032, 0.161], [8, 3, 0.01, 0.085]
+        ];
+
+        lineData.forEach(([from, to, r, x], i) => {
+            createLine(state.buses[from].id, state.buses[to].id);
+            state.lines[i].r = r;
+            state.lines[i].x = x;
+            state.lines[i].b = 0.02;
+        });
+
+        log('Loaded IEEE 9-Bus System (WSCC 3-Machine)', 'success');
+        render();
+    }
+
+    function loadIEEE14Bus() {
+        clearAll_silent();
+
+        // IEEE 14-bus positions
+        const positions = [
+            [150, 200], [300, 100], [300, 300], [450, 200], [450, 350],
+            [550, 100], [550, 250], [550, 400], [700, 100], [700, 200],
+            [700, 300], [700, 400], [850, 200], [850, 350]
+        ];
+
+        for (let i = 0; i < 14; i++) {
+            createBus(positions[i][0], positions[i][1]);
+            state.buses[i].name = `Bus ${i + 1}`;
+        }
+
+        state.buses[0].type = 'slack';
+        state.buses[1].type = 'pv';
+        state.buses[2].type = 'pv';
+        state.buses[5].type = 'pv';
+        state.buses[7].type = 'pv';
+
+        // Generators
+        createGenerator(state.buses[0].id); state.generators[0].pg = 232.4;
+        createGenerator(state.buses[1].id); state.generators[1].pg = 40;
+        createGenerator(state.buses[2].id); state.generators[2].pg = 0;
+        createGenerator(state.buses[5].id); state.generators[3].pg = 0;
+        createGenerator(state.buses[7].id); state.generators[4].pg = 0;
+
+        // Loads
+        const loadData = [[1, 21.7, 12.7], [2, 94.2, 19], [3, 47.8, -3.9], [4, 7.6, 1.6],
+                          [5, 11.2, 7.5], [8, 29.5, 16.6], [9, 9, 5.8], [10, 3.5, 1.8],
+                          [11, 6.1, 1.6], [12, 13.5, 5.8], [13, 14.9, 5]];
+        loadData.forEach(([bus, p, q]) => {
+            createLoad(state.buses[bus].id);
+            const load = state.loads[state.loads.length - 1];
+            load.pl = p;
+            load.ql = q;
+        });
+
+        // Lines (key connections)
+        const lines = [[0,1], [0,4], [1,2], [1,3], [1,4], [2,3], [3,4], [3,6], [3,8],
+                       [4,5], [5,10], [5,11], [5,12], [6,7], [6,8], [8,9], [8,13],
+                       [9,10], [11,12], [12,13]];
+        lines.forEach(([from, to]) => {
+            createLine(state.buses[from].id, state.buses[to].id);
+        });
+
+        log('Loaded IEEE 14-Bus System', 'success');
+        render();
+    }
+
+    function loadIEEE30Bus() {
+        clearAll_silent();
+
+        // 30 bus simplified layout
+        for (let i = 0; i < 30; i++) {
+            const x = 100 + (i % 6) * 120;
+            const y = 80 + Math.floor(i / 6) * 100;
+            createBus(x, y);
+            state.buses[i].name = `Bus ${i + 1}`;
+        }
+
+        state.buses[0].type = 'slack';
+        [1, 4, 7, 10, 12].forEach(i => { state.buses[i].type = 'pv'; });
+
+        // Simplified generators and loads
+        createGenerator(state.buses[0].id); state.generators[0].pg = 260;
+        createGenerator(state.buses[1].id); state.generators[1].pg = 40;
+
+        // Add some loads
+        [2, 3, 6, 9, 11, 14, 17, 20, 23, 26, 29].forEach(i => {
+            createLoad(state.buses[i].id);
+            state.loads[state.loads.length - 1].pl = 10 + Math.random() * 20;
+        });
+
+        // Key lines
+        for (let i = 0; i < 29; i++) {
+            createLine(state.buses[i].id, state.buses[i + 1].id);
+        }
+        // Add some cross connections
+        createLine(state.buses[0].id, state.buses[5].id);
+        createLine(state.buses[5].id, state.buses[10].id);
+        createLine(state.buses[10].id, state.buses[15].id);
+
+        log('Loaded IEEE 30-Bus System', 'success');
+        render();
+    }
+
+    function loadRadialFeeder() {
+        clearAll_silent();
+
+        // 5-bus radial feeder
+        for (let i = 0; i < 5; i++) {
+            createBus(150 + i * 150, 200);
+            state.buses[i].name = `Bus ${i + 1}`;
+        }
+
+        state.buses[0].type = 'slack';
+        createGenerator(state.buses[0].id);
+        state.generators[0].pg = 50;
+
+        // Loads on each bus except source
+        for (let i = 1; i < 5; i++) {
+            createLoad(state.buses[i].id);
+            state.loads[state.loads.length - 1].pl = 10;
+            state.loads[state.loads.length - 1].ql = 3;
+        }
+
+        // Series connections
+        for (let i = 0; i < 4; i++) {
+            createLine(state.buses[i].id, state.buses[i + 1].id);
+            state.lines[i].r = 0.03;
+            state.lines[i].x = 0.1;
+        }
+
+        log('Loaded Radial Distribution Feeder', 'success');
+        render();
+    }
+
+    function loadRingNetwork() {
+        clearAll_silent();
+
+        // 6-bus ring
+        const n = 6;
+        const cx = 400, cy = 250, r = 150;
+
+        for (let i = 0; i < n; i++) {
+            const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+            const x = cx + r * Math.cos(angle);
+            const y = cy + r * Math.sin(angle);
+            createBus(x, y);
+            state.buses[i].name = `Bus ${i + 1}`;
+        }
+
+        state.buses[0].type = 'slack';
+        state.buses[3].type = 'pv';
+
+        createGenerator(state.buses[0].id); state.generators[0].pg = 100;
+        createGenerator(state.buses[3].id); state.generators[1].pg = 50;
+
+        createLoad(state.buses[1].id); state.loads[0].pl = 40;
+        createLoad(state.buses[2].id); state.loads[1].pl = 30;
+        createLoad(state.buses[4].id); state.loads[2].pl = 50;
+        createLoad(state.buses[5].id); state.loads[3].pl = 25;
+
+        // Ring connections
+        for (let i = 0; i < n; i++) {
+            createLine(state.buses[i].id, state.buses[(i + 1) % n].id);
+        }
+        // Cross connection
+        createLine(state.buses[0].id, state.buses[3].id);
+
+        log('Loaded Ring Network', 'success');
+        render();
+    }
+
+    function clearAll_silent() {
+        state.buses = [];
+        state.generators = [];
+        state.loads = [];
+        state.lines = [];
+        state.transformers = [];
+        state.shunts = [];
+        state.selectedId = null;
+        state.selectedType = null;
+        state.results = null;
+        state.nextId = { bus: 1, gen: 1, load: 1, line: 1, xfmr: 1, shunt: 1 };
+    }
+
+    // ==================== INITIALIZATION ====================
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    log('PowerGrid Pro initialized - Phase 2 Complete', 'success');
+    log('Ready to build your power system. Add buses first, then connect with lines.', 'muted');
     </script>
 </body>
 </html>
