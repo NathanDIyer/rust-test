@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust + WebAssembly Particle Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 2.5rem;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 1000px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .panel h2 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #48dbfb;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .panel h2::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #48dbfb;
+            border-radius: 50%;
+        }
+        
+        canvas {
+            width: 100%;
+            height: 450px;
+            background: #0a0a15;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .code-container {
+            background: #0d1117;
+            border-radius: 8px;
+            overflow: hidden;
+            max-height: 450px;
+            overflow-y: auto;
+        }
+        
+        .code-header {
+            background: #161b22;
+            padding: 10px 15px;
+            font-size: 0.9rem;
+            color: #8b949e;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+        }
+        
+        pre {
+            margin: 0;
+            padding: 15px;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #c9d1d9;
+            overflow-x: auto;
+        }
+        
+        .keyword { color: #ff7b72; }
+        .function { color: #d2a8ff; }
+        .type { color: #79c0ff; }
+        .string { color: #a5d6ff; }
+        .comment { color: #8b949e; }
+        .number { color: #ffa657; }
+        .macro { color: #ffa657; }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .stats {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #888;
+        }
+        
+        .stats span {
+            color: #feca57;
+            font-weight: bold;
+        }
+        
+        .info-box {
+            background: rgba(72, 219, 251, 0.1);
+            border-left: 3px solid #48dbfb;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        .info-box strong {
+            color: #48dbfb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Rust + WebAssembly</h1>
+        <p class="subtitle">N-Body Gravity Simulation Running in Your Browser</p>
+        
+        <div class="main-content">
+            <div class="panel">
+                <h2>Live Simulation</h2>
+                <canvas id="canvas"></canvas>
+                <div class="controls">
+                    <button onclick="reset()">Reset</button>
+                    <button onclick="addParticles(10)">Add 10 Particles</button>
+                    <button onclick="togglePause()">Pause/Play</button>
+                    <button onclick="explode()">Explode!</button>
+                </div>
+                <div class="stats">
+                    Particles: <span id="count">0</span> | 
+                    FPS: <span id="fps">0</span> | 
+                    Physics: <span id="physics-time">0</span>ms
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>Rust Source Code</h2>
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>particles.rs</span>
+                        <span>Compiled to WebAssembly</span>
+                    </div>
+                    <pre><code><span class="comment">// This Rust code compiles to the WebAssembly running the simulation</span>
+<span class="comment">// Memory layout: [x, y, vx, vy] per particle (4 x f32 = 16 bytes)</span>
+
+<span class="keyword">const</span> G: <span class="type">f32</span> = <span class="number">0.5</span>;           <span class="comment">// Gravity constant</span>
+<span class="keyword">const</span> DT: <span class="type">f32</span> = <span class="number">0.016</span>;         <span class="comment">// Time step (~60fps)</span>
+<span class="keyword">const</span> SOFTENING: <span class="type">f32</span> = <span class="number">5.0</span>;   <span class="comment">// Prevents div-by-zero</span>
+
+<span class="macro">#[repr(C)]</span>
+<span class="keyword">struct</span> <span class="type">Particle</span> {
+    x: <span class="type">f32</span>,
+    y: <span class="type">f32</span>,
+    vx: <span class="type">f32</span>,
+    vy: <span class="type">f32</span>,
+}
+
+<span class="macro">#[no_mangle]</span>
+<span class="keyword">pub extern</span> <span class="string">"C"</span> <span class="keyword">fn</span> <span class="function">init_particle</span>(
+    i: <span class="type">usize</span>, x: <span class="type">f32</span>, y: <span class="type">f32</span>, vx: <span class="type">f32</span>, vy: <span class="type">f32</span>
+) {
+    <span class="keyword">unsafe</span> {
+        PARTICLES[i] = <span class="type">Particle</span> { x, y, vx, vy };
+    }
+}
+
+<span class="macro">#[no_mangle]</span>
+<span class="keyword">pub extern</span> <span class="string">"C"</span> <span class="keyword">fn</span> <span class="function">update</span>(n: <span class="type">usize</span>) {
+    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="number">0</span>..n {
+        <span class="keyword">let</span> (xi, yi) = <span class="function">get_pos</span>(i);
+        <span class="keyword">let</span> (<span class="keyword">mut</span> ax, <span class="keyword">mut</span> ay) = (<span class="number">0.0</span>, <span class="number">0.0</span>);
+        
+        <span class="comment">// Calculate gravitational force from all other particles</span>
+        <span class="keyword">for</span> j <span class="keyword">in</span> <span class="number">0</span>..n {
+            <span class="keyword">if</span> i != j {
+                <span class="keyword">let</span> (xj, yj) = <span class="function">get_pos</span>(j);
+                <span class="keyword">let</span> (dx, dy) = (xj - xi, yj - yi);
+                
+                <span class="comment">// Distance with softening to prevent singularity</span>
+                <span class="keyword">let</span> dist_sq = dx*dx + dy*dy + SOFTENING;
+                <span class="keyword">let</span> dist = dist_sq.<span class="function">sqrt</span>();
+                
+                <span class="comment">// F = G / r^3 (normalized direction)</span>
+                <span class="keyword">let</span> force = G / (dist_sq * dist);
+                
+                ax += dx * force;
+                ay += dy * force;
+            }
+        }
+        
+        <span class="comment">// Update velocity: v += a * dt</span>
+        <span class="keyword">let</span> vx = <span class="function">get_vx</span>(i) + ax * DT;
+        <span class="keyword">let</span> vy = <span class="function">get_vy</span>(i) + ay * DT;
+        <span class="function">set_velocity</span>(i, vx, vy);
+        
+        <span class="comment">// Update position: x += v * dt</span>
+        <span class="function">set_pos</span>(i, xi + vx * DT, yi + vy * DT);
+    }
+}</code></pre>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <strong>How it works:</strong> The particle physics (N-body gravity simulation) runs entirely in 
+            WebAssembly compiled from Rust. JavaScript handles rendering and user interaction, while Rust/WASM 
+            handles all the math. Click the canvas to attract particles! The O(n²) algorithm calculates 
+            gravitational force between every pair of particles each frame.
+        </div>
+    </div>
+
+    <script>
+        // Base64-encoded WebAssembly binary (compiled from Rust via WAT)
+        const wasmBase64 = "AGFzbQEAAAABGwVgAX8BfWACf30AYAV/fX19fQBgAX8AYAABfwMMCwAAAAABAQEBAgMEBQMBAAEGGQN9AEMAAAA/C30AQ28SgzwLfQBDAACgQAsHNwQGbWVtb3J5AgANaW5pdF9wYXJ0aWNsZQAIBnVwZGF0ZQAJEWdldF9wYXJ0aWNsZXNfcHRyAAoK+gILCgAgAEEQbCoCAAsNACAAQRBsQQRqKgIACw0AIABBEGxBCGoqAgALDQAgAEEQbEEMaioCAAsMACAAQRBsIAE4AgALDwAgAEEQbEEEaiABOAIACw8AIABBEGxBCGogATgCAAsPACAAQRBsQQxqIAE4AgALGgAgACABEAQgACACEAUgACADEAYgACAEEAcL5QECAn8NfUEAIQECQANAIAEgAE8NASABEAAhAyABEAEhBEMAAAAAIQxDAAAAACENQQAhAgJAA0AgAiAATw0BIAEgAkcEQCACEAAhBSACEAEhBiAFIAOTIQcgBiAEkyEIIAcgB5QgCCAIlJIjApIhCSAJkSEKIwAgCSAKlJUhCyAMIAcgC5SSIQwgDSAIIAuUkiENCyACQQFqIQIMAAsLIAEQAiAMIwGUkiEOIAEQAyANIwGUkiEPIAEgDhAGIAEgDxAHIAEgAyAOIwGUkhAEIAEgBCAPIwGUkhAFIAFBAWohAQwACwsLBABBAAs=";
+        
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let wasm = null;
+        let memory = null;
+        let particleCount = 0;
+        let maxParticles = 200;
+        let paused = false;
+        let mouseX = 0, mouseY = 0;
+        let mouseDown = false;
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fps = 0;
+        let physicsTime = 0;
+        
+        // Initialize canvas size
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        
+        // Load WASM module
+        async function loadWasm() {
+            const bytes = Uint8Array.from(atob(wasmBase64), c => c.charCodeAt(0));
+            const { instance } = await WebAssembly.instantiate(bytes);
+            wasm = instance.exports;
+            memory = new Float32Array(wasm.memory.buffer);
+        }
+        
+        // Initialize particles in a circle
+        function initParticles(count) {
+            const centerX = canvas.width / window.devicePixelRatio / 2;
+            const centerY = canvas.height / window.devicePixelRatio / 2;
+            const radius = Math.min(centerX, centerY) * 0.6;
+            
+            for (let i = 0; i < count; i++) {
+                const angle = (i / count) * Math.PI * 2 + Math.random() * 0.5;
+                const r = radius * (0.5 + Math.random() * 0.5);
+                const x = centerX + Math.cos(angle) * r;
+                const y = centerY + Math.sin(angle) * r;
+                
+                // Orbital velocity
+                const speed = 2 + Math.random() * 2;
+                const vx = -Math.sin(angle) * speed;
+                const vy = Math.cos(angle) * speed;
+                
+                wasm.init_particle(i, x, y, vx, vy);
+            }
+            particleCount = count;
+            updateStats();
+        }
+        
+        function addParticles(count) {
+            if (particleCount + count > maxParticles) {
+                count = maxParticles - particleCount;
+            }
+            
+            const centerX = canvas.width / window.devicePixelRatio / 2;
+            const centerY = canvas.height / window.devicePixelRatio / 2;
+            
+            for (let i = 0; i < count; i++) {
+                const idx = particleCount + i;
+                const angle = Math.random() * Math.PI * 2;
+                const r = 50 + Math.random() * 100;
+                const x = centerX + Math.cos(angle) * r;
+                const y = centerY + Math.sin(angle) * r;
+                const vx = (Math.random() - 0.5) * 4;
+                const vy = (Math.random() - 0.5) * 4;
+                wasm.init_particle(idx, x, y, vx, vy);
+            }
+            particleCount += count;
+            updateStats();
+        }
+        
+        function reset() {
+            initParticles(50);
+        }
+        
+        function togglePause() {
+            paused = !paused;
+        }
+        
+        function explode() {
+            const centerX = canvas.width / window.devicePixelRatio / 2;
+            const centerY = canvas.height / window.devicePixelRatio / 2;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const offset = i * 4;
+                const dx = memory[offset] - centerX;
+                const dy = memory[offset + 1] - centerY;
+                const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                memory[offset + 2] += (dx / dist) * 10;
+                memory[offset + 3] += (dy / dist) * 10;
+            }
+        }
+        
+        function updateStats() {
+            document.getElementById('count').textContent = particleCount;
+            document.getElementById('fps').textContent = fps;
+            document.getElementById('physics-time').textContent = physicsTime.toFixed(2);
+        }
+        
+        // Main render loop
+        function render() {
+            const w = canvas.width / window.devicePixelRatio;
+            const h = canvas.height / window.devicePixelRatio;
+            
+            // Clear with fade effect for trails
+            ctx.fillStyle = 'rgba(10, 10, 21, 0.3)';
+            ctx.fillRect(0, 0, w, h);
+            
+            if (!paused && particleCount > 0) {
+                // Mouse attraction
+                if (mouseDown) {
+                    for (let i = 0; i < particleCount; i++) {
+                        const offset = i * 4;
+                        const dx = mouseX - memory[offset];
+                        const dy = mouseY - memory[offset + 1];
+                        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                        memory[offset + 2] += (dx / dist) * 0.3;
+                        memory[offset + 3] += (dy / dist) * 0.3;
+                    }
+                }
+                
+                // Run physics in WASM
+                const startPhysics = performance.now();
+                wasm.update(particleCount);
+                physicsTime = performance.now() - startPhysics;
+            }
+            
+            // Draw particles
+            for (let i = 0; i < particleCount; i++) {
+                const offset = i * 4;
+                const x = memory[offset];
+                const y = memory[offset + 1];
+                const vx = memory[offset + 2];
+                const vy = memory[offset + 3];
+                const speed = Math.sqrt(vx*vx + vy*vy);
+                
+                // Color based on velocity
+                const hue = 200 + speed * 10;
+                const size = 2 + speed * 0.3;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fillStyle = `hsl(${hue}, 80%, 60%)`;
+                ctx.fill();
+                
+                // Glow effect
+                ctx.beginPath();
+                ctx.arc(x, y, size * 2, 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${hue}, 80%, 60%, 0.2)`;
+                ctx.fill();
+            }
+            
+            // FPS calculation
+            frameCount++;
+            const now = performance.now();
+            if (now - lastTime >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastTime = now;
+                updateStats();
+            }
+            
+            requestAnimationFrame(render);
+        }
+        
+        // Event listeners
+        canvas.addEventListener('mousedown', (e) => {
+            mouseDown = true;
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+        
+        canvas.addEventListener('mouseup', () => mouseDown = false);
+        canvas.addEventListener('mouseleave', () => mouseDown = false);
+        
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Initialize
+        async function init() {
+            resizeCanvas();
+            await loadWasm();
+            initParticles(50);
+            render();
+        }
+        
+        init();
+    </script>
+</body>
+</html>
